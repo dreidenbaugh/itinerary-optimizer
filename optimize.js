@@ -45,13 +45,13 @@ function optimize() {
     }
     
     // Prepare variables for path calculations:
-    output = "";
     var currentUnvisitedStops = [];
     for (var i = 0; i < places.length - 1; i++)
     {
         currentUnvisitedStops.push(i);
     }
     var currentPath = [];
+    pathsAndPrices = [];
     
     // Set initial values for path calculations:
     var currentPlace = 0;
@@ -62,23 +62,38 @@ function optimize() {
    
     // Do path calculations:
     traverse(currentPath, currentUnvisitedStops, currentTotalPrice);
-    if (currentUnvisitedStops.length == 0)
+    
+    // Sort the results:
+    pathsAndPrices.sort(function(a, b){return a.price - b.price});
+    
+    // Output the results:
+    output = "";
+    for (var i = 0; i < pathsAndPrices.length; i++)
     {
-        currentPath.push(places.length - 1);
-        if (flightsArrays[currentPlace][places.length - 1] != null &&
-                currentTotalPrice != -1)
+        var path = pathsAndPrices[i].path;
+        var price = pathsAndPrices[i].price;
+        
+        // Generate a string for the path:
+        var outputPath = "";
+        for (var j = 0; j < path.length - 1; j++)
         {
-            currentTotalPrice += flightsArrays[currentPlace][places.length 
-                    - 1].price;
+            outputPath = outputPath + places[path[j]] + "–";
+        }
+        outputPath = outputPath + places[path[path.length - 1]];
+        
+        // Generate a string for the price:
+        if (price != 99999)
+        {
+            var outputPrice = "$" + price;
         }
         else
         {
-            currentTotalPrice = -1;
+            var outputPrice = "[No Price Available]";
         }
-        addResult(currentPath, currentTotalPrice);
+        
+        // Concatenate the strings for this result to the output:
+        output = output + outputPath + ": " + outputPrice + "<br />";
     }
-    
-    // Output the results:
     document.getElementById("output").innerHTML = output;
 }
 
@@ -99,17 +114,19 @@ function flightSearch(originPlace, destinationPlace, date) {
     xhr.send();
     
     // Parse the response:
-    console.log(xhr.status);
-    console.log(xhr.response);
+    console.log("Status:", xhr.status);
+    console.log("Response:", xhr.response);
     var json = JSON.parse(xhr.response);
-    console.log(json);
     
+    // If the request was successful, 
     if (xhr.status == 200)
     {
+        // If the request returned a result, return the flight information:
         if (json.Quotes.length > 0)
         {
             return {price: json.Quotes[0].MinPrice};
         }
+        // Otherwise, if the request returned no results,
         else
         {
             alert("No results available for " + originPlace + "–"
@@ -117,20 +134,24 @@ function flightSearch(originPlace, destinationPlace, date) {
             return null;
         }
     }
+    // If the request was bad, 
     else if (xhr.status == 400)
     {
+        // If there are validation error messages, 
         if (json.ValidationErrors.length > 0)
         {
+            // If the message is that a value was invalid, 
             if (json.ValidationErrors[0].Message === "Incorrect value")
             {
                 alert(json.ValidationErrors[0].ParameterValue 
-                        + " is not a valid location");
+                        + " is not valid");
                 return null;
             }
         }
         alert("An unknown error occurred during the search");
         return null;
     }
+    // If another error occurred,
     else
     {
         alert("An unknown error occurred during the search");
@@ -138,63 +159,68 @@ function flightSearch(originPlace, destinationPlace, date) {
     }
 }
 
+/**
+ * Based on the current path travelled so far, recursively traverse all 
+ * possible paths to the end place and add each path and its total price to 
+ * pathsAndPrices
+ * @param {number[]} previousPath - The path travelled so far as an array of 
+ * place indices
+ * @param {number[]} previousUnvisitedStops - The stops that have not yet been 
+ * visited as an array of place indices
+ * @param {number} previousTotalPrice - The total price of the path travelled 
+ * so far
+ */
 function traverse(previousPath, previousUnvisitedStops, previousTotalPrice)
 {
+    // For each unvisited stop ahead, 
     for (var i = 0; i < previousUnvisitedStops.length; i++)
     {
+        // Create new variables and update them:
         var currentPlace = previousUnvisitedStops[i];
         var currentPath = previousPath.slice();
-        currentPath.push(currentPlace);
+        currentPath.push(currentPlace); // Add current place to the path
         var currentUnvisitedStops = previousUnvisitedStops.slice();
         currentUnvisitedStops.splice(currentUnvisitedStops.indexOf(
-                currentPlace), 1);
+                currentPlace), 1); // Remove current place from unvisited stops
         var currentTotalPrice = previousTotalPrice;
+        
+        // If the flight is available and the total so far is available,
         if (flightsArrays[currentPath[currentPath.length - 2]][currentPlace] 
-                != null && currentTotalPrice != -1)
+                != null && currentTotalPrice != 99999)
         {
+            // Add the price for the flight:
              currentTotalPrice += flightsArrays[currentPath[currentPath.length 
                     - 2]][currentPlace].price;
         }
         else
         {
-            currentTotalPrice = -1;
+            currentTotalPrice = 99999;
         }
+        
+        // Traverse all possible paths after the current path:
         traverse(currentPath, currentUnvisitedStops, currentTotalPrice);
-        if (currentUnvisitedStops.length == 0)
+    }
+    // If there are no stops left except the end,
+    if (previousUnvisitedStops.length == 0)
+    {
+        // Add the end to the path:
+        previousPath.push(places.length - 1);
+        
+        // If the flight is available and the total so far is available,
+        if (flightsArrays[previousPath[previousPath.length - 2]][places.length 
+                - 1] != null && previousTotalPrice != 99999)
         {
-            currentPath.push(places.length - 1);
-            if (flightsArrays[currentPlace][places.length - 1] != null && 
-                    currentTotalPrice != -1)
-            {
-                currentTotalPrice += flightsArrays[currentPlace][places.length 
-                        - 1].price;
-            }
-            else
-            {
-                currentTotalPrice = -1;
-            }
-            addResult(currentPath, currentTotalPrice);
+            // Add the price for the last flight to the end place:
+            previousTotalPrice += flightsArrays[previousPath[
+                    previousPath.length - 2]][places.length - 1].price;
         }
+        else
+        {
+            previousTotalPrice = 99999;
+        }
+        
+        // Add the final path and price to pathsAndPrices:
+        pathsAndPrices.push({path: previousPath, price: previousTotalPrice});
+        console.log("Saved:", previousPath, previousTotalPrice);
     }
-}
-
-function addResult(currentPath, currentTotalPrice)
-{
-    pathsAndPrices.push({path: currentPath, price: currentTotalPrice});
-    console.log("Saved:", currentPath, currentTotalPrice);
-    var outputPath = "";
-    for (var j = 0; j < currentPath.length - 1; j++)
-    {
-        outputPath = outputPath + places[currentPath[j]] + "–";
-    }
-    outputPath = outputPath + places[currentPath[currentPath.length - 1]];
-    if (currentTotalPrice != -1)
-    {
-        output = output + outputPath + ": $" + currentTotalPrice + "<br />"
-    }
-    else
-    {
-        output = output + outputPath + ": [No Price Available]<br />";
-    }        
-    console.log("Output:", output);
 }
