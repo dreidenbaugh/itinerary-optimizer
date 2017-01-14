@@ -1,3 +1,8 @@
+var flightsArrays;
+var places;
+var pathsAndPrices = [];
+var output = "";
+
 function optimize() {
     // Extract input from form:
     var startPlace = form.start.value;
@@ -8,22 +13,22 @@ function optimize() {
     // Compile list of all places:
     if (stopPlaces[0] !== "")
     {
-        var places = [startPlace].concat(stopPlaces,[endPlace]);
+        places = [startPlace].concat(stopPlaces,[endPlace]);
     }
     else
     {
-        var places = [startPlace, endPlace];
+        places = [startPlace, endPlace];
     }
     console.log(places);
     
     // Generate 2D array of cheapest flights for all possible routes
-    var flightsArrays = new Array(places.length - 1);
+    flightsArrays = new Array(places.length - 1);
     for (var fromIndex = 0; fromIndex < places.length - 1; fromIndex++)
     {   
         var flightsRow = new Array(places.length);
         for (var toIndex = 1; toIndex < places.length; toIndex++)
         {
-            if (fromIndex == 0 && toIndex == places.length - 1)
+            if (fromIndex == 0 && toIndex > 1 && toIndex == places.length - 1)
             {
                 break;
             }
@@ -39,8 +44,36 @@ function optimize() {
         flightsArrays[fromIndex] = flightsRow;
     }
     
+    output = ""
+    var currentUnvisitedStops = [];
+    for (var i = 0; i < places.length - 1; i++)
+    {
+        currentUnvisitedStops.push(i);
+    }
+    var currentPath = [];
+    
+    var currentPlace = 0;
+    currentPath.push(currentPlace);
+    currentUnvisitedStops.splice(currentUnvisitedStops.indexOf(currentPlace), 1);
+    var currentTotalPrice = 0;
+   
+    traverse(currentPath, currentUnvisitedStops, currentTotalPrice);
+    if (currentUnvisitedStops.length == 0)
+    {
+        currentPath.push(places.length - 1);
+        currentTotalPrice += flightsArrays[currentPlace][places.length - 1].price;
+        pathsAndPrices.push({path: currentPath, price: currentTotalPrice});
+        console.log("Saved:", currentPath, currentTotalPrice);
+        var outputPath = "";
+        for (var j = 0; j < currentPath.length; j++)
+        {
+            outputPath = outputPath + places[currentPath[j]] + " ";
+        }
+        output = output + outputPath + "$" + currentTotalPrice + "<br />"
+        console.log("Output:", output);
+    }
+    
     // Output the results:
-    var output = "Complete" + "<br>";
     document.getElementById("output").innerHTML = output;
 }
 
@@ -74,5 +107,34 @@ function flightSearch(originPlace, destinationPlace, date) {
     else
     {
         return null;
+    }
+}
+
+function traverse(previousPath, previousUnvisitedStops, previousTotalPrice)
+{
+    for (var i = 0; i < previousUnvisitedStops.length; i++)
+    {
+        var currentPlace = previousUnvisitedStops[i];
+        var currentPath = previousPath.slice();
+        currentPath.push(currentPlace);
+        var currentUnvisitedStops = previousUnvisitedStops.slice();
+        currentUnvisitedStops.splice(currentUnvisitedStops.indexOf(currentPlace), 1);
+        var currentTotalPrice = previousTotalPrice;
+        currentTotalPrice += flightsArrays[currentPath[currentPath.length - 2]][currentPlace].price;
+        traverse(currentPath, currentUnvisitedStops, currentTotalPrice);
+        if (currentUnvisitedStops.length == 0)
+        {
+            currentPath.push(places.length - 1);
+            currentTotalPrice += flightsArrays[currentPlace][places.length - 1].price;
+            pathsAndPrices.push({path: currentPath, price: currentTotalPrice});
+            console.log("Saved:", currentPath, currentTotalPrice);
+            var outputPath = "";
+            for (var j = 0; j < currentPath.length; j++)
+            {
+                outputPath = outputPath + places[currentPath[j]] + " ";
+            }
+            output = output + outputPath + "$" + currentTotalPrice + "<br />"
+            console.log("Output:", output);
+        }
     }
 }
