@@ -44,7 +44,8 @@ function optimize() {
         flightsArrays[fromIndex] = flightsRow;
     }
     
-    output = ""
+    // Prepare variables for path calculations:
+    output = "";
     var currentUnvisitedStops = [];
     for (var i = 0; i < places.length - 1; i++)
     {
@@ -52,25 +53,29 @@ function optimize() {
     }
     var currentPath = [];
     
+    // Set initial values for path calculations:
     var currentPlace = 0;
     currentPath.push(currentPlace);
-    currentUnvisitedStops.splice(currentUnvisitedStops.indexOf(currentPlace), 1);
+    currentUnvisitedStops.splice(currentUnvisitedStops.indexOf(currentPlace), 
+            1);
     var currentTotalPrice = 0;
    
+    // Do path calculations:
     traverse(currentPath, currentUnvisitedStops, currentTotalPrice);
     if (currentUnvisitedStops.length == 0)
     {
         currentPath.push(places.length - 1);
-        currentTotalPrice += flightsArrays[currentPlace][places.length - 1].price;
-        pathsAndPrices.push({path: currentPath, price: currentTotalPrice});
-        console.log("Saved:", currentPath, currentTotalPrice);
-        var outputPath = "";
-        for (var j = 0; j < currentPath.length; j++)
+        if (flightsArrays[currentPlace][places.length - 1] != null &&
+                currentTotalPrice != -1)
         {
-            outputPath = outputPath + places[currentPath[j]] + " ";
+            currentTotalPrice += flightsArrays[currentPlace][places.length 
+                    - 1].price;
         }
-        output = output + outputPath + "$" + currentTotalPrice + "<br />"
-        console.log("Output:", output);
+        else
+        {
+            currentTotalPrice = -1;
+        }
+        addResult(currentPath, currentTotalPrice);
     }
     
     // Output the results:
@@ -99,13 +104,36 @@ function flightSearch(originPlace, destinationPlace, date) {
     var json = JSON.parse(xhr.response);
     console.log(json);
     
-    // Return flight information or null if no flight was found:
-    if (json.Quotes.length > 0)
+    if (xhr.status == 200)
     {
-        return {price: json.Quotes[0].MinPrice};
+        if (json.Quotes.length > 0)
+        {
+            return {price: json.Quotes[0].MinPrice};
+        }
+        else
+        {
+            alert("No results available for " + originPlace + "–"
+                    + destinationPlace);
+            return null;
+        }
+    }
+    else if (xhr.status == 400)
+    {
+        if (json.ValidationErrors.length > 0)
+        {
+            if (json.ValidationErrors[0].Message === "Incorrect value")
+            {
+                alert(json.ValidationErrors[0].ParameterValue 
+                        + " is not a valid location");
+                return null;
+            }
+        }
+        alert("An unknown error occurred during the search");
+        return null;
     }
     else
     {
+        alert("An unknown error occurred during the search");
         return null;
     }
 }
@@ -118,23 +146,55 @@ function traverse(previousPath, previousUnvisitedStops, previousTotalPrice)
         var currentPath = previousPath.slice();
         currentPath.push(currentPlace);
         var currentUnvisitedStops = previousUnvisitedStops.slice();
-        currentUnvisitedStops.splice(currentUnvisitedStops.indexOf(currentPlace), 1);
+        currentUnvisitedStops.splice(currentUnvisitedStops.indexOf(
+                currentPlace), 1);
         var currentTotalPrice = previousTotalPrice;
-        currentTotalPrice += flightsArrays[currentPath[currentPath.length - 2]][currentPlace].price;
+        if (flightsArrays[currentPath[currentPath.length - 2]][currentPlace] 
+                != null && currentTotalPrice != -1)
+        {
+             currentTotalPrice += flightsArrays[currentPath[currentPath.length 
+                    - 2]][currentPlace].price;
+        }
+        else
+        {
+            currentTotalPrice = -1;
+        }
         traverse(currentPath, currentUnvisitedStops, currentTotalPrice);
         if (currentUnvisitedStops.length == 0)
         {
             currentPath.push(places.length - 1);
-            currentTotalPrice += flightsArrays[currentPlace][places.length - 1].price;
-            pathsAndPrices.push({path: currentPath, price: currentTotalPrice});
-            console.log("Saved:", currentPath, currentTotalPrice);
-            var outputPath = "";
-            for (var j = 0; j < currentPath.length; j++)
+            if (flightsArrays[currentPlace][places.length - 1] != null && 
+                    currentTotalPrice != -1)
             {
-                outputPath = outputPath + places[currentPath[j]] + " ";
+                currentTotalPrice += flightsArrays[currentPlace][places.length 
+                        - 1].price;
             }
-            output = output + outputPath + "$" + currentTotalPrice + "<br />"
-            console.log("Output:", output);
+            else
+            {
+                currentTotalPrice = -1;
+            }
+            addResult(currentPath, currentTotalPrice);
         }
     }
+}
+
+function addResult(currentPath, currentTotalPrice)
+{
+    pathsAndPrices.push({path: currentPath, price: currentTotalPrice});
+    console.log("Saved:", currentPath, currentTotalPrice);
+    var outputPath = "";
+    for (var j = 0; j < currentPath.length - 1; j++)
+    {
+        outputPath = outputPath + places[currentPath[j]] + "–";
+    }
+    outputPath = outputPath + places[currentPath[currentPath.length - 1]];
+    if (currentTotalPrice != -1)
+    {
+        output = output + outputPath + ": $" + currentTotalPrice + "<br />"
+    }
+    else
+    {
+        output = output + outputPath + ": [No Price Available]<br />";
+    }        
+    console.log("Output:", output);
 }
