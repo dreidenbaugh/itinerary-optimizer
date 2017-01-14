@@ -1,9 +1,30 @@
-<!doctype html>
-<html lang="en">
-    <head>
-        <title>Itinerary Optimizer</title>
-    </head>
-    <body>
-        <h1>Itinerary Optimizer</h1>
-    </body>
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+<meta charset="UTF-8">
+<title>Itinerary Optimizer</title>
+</head>
+
+<body>
+
+<h1>Itinerary Optimizer</h1>
+
+<script type="text/javascript" src="optimize.js"></script>
+
+<form id="form" action="#">
+  <label for="start">Start:</label>
+  <input id="start"><br />
+  
+  <label for="end">End:</label>
+  <input id="end"><br />
+  
+  <label for="departure-date">Start Date:</label>
+  <input type="date" id="start-date"><br />
+  
+  <input type="submit" value="Optimize" onclick="optimize()">
+</form>
+
+<p id="output"></p>
+
+</body>
 </html>
