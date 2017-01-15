@@ -15,11 +15,15 @@ function optimize() {
     console.log(places);
     var startDate = form.startdate.value;
     
-    // Generate 2D array of cheapest flights for all possible routes
+    // Generate 3D array to use as cache for flight searches
     flightsArrays = new Array(places.length - 1);
-    for (var fromIndex = 0; fromIndex < places.length - 1; fromIndex++)
+    for (var i = 0; i < places.length - 1; i++)
     {   
-        flightsArrays[fromIndex] = new Array(places.length);
+        flightsArrays[i] = new Array(places.length);
+        for (var j = 0; j < places.length; j++)
+        {
+            flightsArrays[i][j] = [];
+        }
     }
     
     // Prepare variables for path calculations:
@@ -101,22 +105,28 @@ function removeInput(id) {
 
 function flightCacheSearch(originPlaceIndex, destinationPlaceIndex, date)
 {
-    if (flightsArrays[originPlaceIndex][destinationPlaceIndex] != null)
+    var array = flightsArrays[originPlaceIndex][destinationPlaceIndex];
+    if (array.length > 0)
     {
-        var result = flightsArrays[originPlaceIndex][destinationPlaceIndex];
-    }
-    else
-    {
-        var result = flightAPISearch(places[originPlaceIndex],
-                places[destinationPlaceIndex], date);
-        console.log("Searched:", places[originPlaceIndex], 
-                places[destinationPlaceIndex], date, result);
-        if (result == null)
+        for (var i = 0; i < array.length; i++)
         {
-            result = "No Result";
+            if (array[i].date === date)
+            {
+                console.log("In Cache:", places[originPlaceIndex], 
+                        places[destinationPlaceIndex], date, array[i]);
+                return array[i];
+            }
         }
-        flightsArrays[originPlaceIndex][destinationPlaceIndex] = result;
     }
+    var result = flightAPISearch(places[originPlaceIndex],
+            places[destinationPlaceIndex], date);
+    console.log("Searched:", places[originPlaceIndex], 
+            places[destinationPlaceIndex], date, result);
+    if (result == null)
+    {
+        result = "No Result";
+    }
+    array.push(result);
     return result;
 }
 
@@ -212,13 +222,12 @@ function traverse(previousPath, previousUnvisitedStops, previousTotalPrice,     
         var currentDate = previousDate;
         
         // If the flight is available and the total so far is available,
-        if (flightCacheSearch(currentPath[currentPath.length - 2],
-                currentPlace, currentDate) !== "No Result" 
-                && currentTotalPrice != 99999)
+        var flight = flightCacheSearch(currentPath[currentPath.length - 2],
+                currentPlace, currentDate)
+        if (flight !== "No Result" && currentTotalPrice != 99999)
         {
             // Add the price for the flight:
-             currentTotalPrice += flightsArrays[currentPath[currentPath.length 
-                    - 2]][currentPlace].price;
+             currentTotalPrice += flight.price;
         }
         else
         {
@@ -236,13 +245,12 @@ function traverse(previousPath, previousUnvisitedStops, previousTotalPrice,     
         previousPath.push(places.length - 1);
         
         // If the flight is available and the total so far is available,
-        if (flightCacheSearch(previousPath[previousPath.length - 2], 
-                places.length - 1, previousDate) !== "No Result" 
-                && previousTotalPrice != 99999)
+        var flight = flightCacheSearch(previousPath[previousPath.length - 2], 
+                places.length - 1, previousDate)
+        if (flight !== "No Result" && previousTotalPrice != 99999)
         {
             // Add the price for the last flight to the end place:
-            previousTotalPrice += flightsArrays[previousPath[
-                    previousPath.length - 2]][places.length - 1].price;
+            previousTotalPrice += flight.price;
         }
         else
         {
