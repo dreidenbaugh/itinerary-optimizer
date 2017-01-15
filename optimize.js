@@ -1,6 +1,7 @@
 var flightsArrays;
 var places;
 var placeDays;
+var startDate
 var pathsAndPrices;
 var output;
 
@@ -20,7 +21,7 @@ function optimize() {
     placeDays.push(null);
     console.log("Places", places);
     console.log("Days", placeDays);
-    var startDate = new Date(form.startdate.value);
+    startDate = new Date(form.startdate.value);
     
     // Generate 3D array to use as cache for flight searches
     flightsArrays = new Array(places.length - 1);
@@ -56,7 +57,9 @@ function optimize() {
     pathsAndPrices.sort(function(a, b){return a.price - b.price});
     
     // Output the results:
-    output = "";
+    output = "<h3>Cheapest Itinerary</h3>" 
+            + itineraryAsHTML(pathsAndPrices[0].path)
+            + "<h3>All Itineraries</h3>";
     for (var i = 0; i < pathsAndPrices.length; i++)
     {
         var path = pathsAndPrices[i].path;
@@ -113,20 +116,20 @@ function removeInput(id) {
 
 function flightCacheSearch(originPlaceIndex, destinationPlaceIndex, date)
 {
+    var dateString = date.toISOString().substring(0, 10);
     var array = flightsArrays[originPlaceIndex][destinationPlaceIndex];
     if (array.length > 0)
     {
         for (var i = 0; i < array.length; i++)
         {
-            if (array[i].date == date)
+            if (array[i].date == dateString)
             {
                 console.log("In Cache:", places[originPlaceIndex], 
-                        places[destinationPlaceIndex], date, array[i]);
+                        places[destinationPlaceIndex], dateString, array[i]);
                 return array[i];
             }
         }
     }
-    var dateString = date.toISOString().substring(0, 10);
     var result = flightAPISearch(places[originPlaceIndex],
             places[destinationPlaceIndex], dateString);
     console.log("Searched:", places[originPlaceIndex], 
@@ -273,4 +276,21 @@ function traverse(previousPath, previousUnvisitedStops, previousTotalPrice,
         pathsAndPrices.push({path: previousPath, price: previousTotalPrice});
         console.log("Saved:", previousPath, previousTotalPrice);
     }
+}
+
+function itineraryAsHTML(path)
+{
+    var output = "";
+    var date = startDate;
+    var totalPrice = 0;
+    for (var i = 0; i < path.length - 1; i++)
+    {
+        var days = placeDays[path[i]];
+        date = new Date(date.valueOf() + days * 86400000);
+        var flight = flightCacheSearch(path[i], path[i + 1], date);
+        output = output + flight.date + ": " + places[path[i]] + "–" 
+                + places[path[i + 1]] + " ($" + flight.price + ")<br />";
+        totalPrice += flight.price;
+    }
+    return output + "<b>Total: $" + totalPrice + "</b><br />";
 }
