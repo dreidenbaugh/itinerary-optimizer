@@ -1,0 +1,26 @@
+body {
+  font-family: sans-serif;
+  text-align: center;
+}
+label {
+  margin-top: 10px;
+  display:inline-block;
+}
+form {
+  width: 200px;
+  padding-bottom: 20px;
+  border: 2px solid black;
+  margin: auto;
+}
+input[type=text]{
+  width: 42px;
+}
+input[type=number]{
+  width: 32px;
+}
+input[type=date]{
+  width: 125px;
+}
+input[type=button]{
+  margin-top: 5px;
+}

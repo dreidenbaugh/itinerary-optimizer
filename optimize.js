@@ -57,34 +57,41 @@ function optimize() {
     pathsAndPrices.sort(function(a, b){return a.price - b.price});
     
     // Output the results:
-    output = "<h3>Cheapest Itinerary</h3>" 
-            + itineraryAsHTML(pathsAndPrices[0].path)
-            + "<h3>All Itineraries</h3>";
-    for (var i = 0; i < pathsAndPrices.length; i++)
+    if(pathsAndPrices[0].price != 99999)
     {
-        var path = pathsAndPrices[i].path;
-        var price = pathsAndPrices[i].price;
-        
-        // Generate a string for the path:
-        var outputPath = "";
-        for (var j = 0; j < path.length - 1; j++)
+        output = "<h2>Results</h2><h3>Cheapest Itinerary</h3>";
+        output = output + itineraryAsHTML(pathsAndPrices[0].path)
+                + "<h3>All Itineraries</h3>";
+        for (var i = 0; i < pathsAndPrices.length; i++)
         {
-            outputPath = outputPath + places[path[j]] + "–";
+            var path = pathsAndPrices[i].path;
+            var price = pathsAndPrices[i].price;
+            
+            // Generate a string for the path:
+            var outputPath = "";
+            for (var j = 0; j < path.length - 1; j++)
+            {
+                outputPath = outputPath + places[path[j]] + "–";
+            }
+            outputPath = outputPath + places[path[path.length - 1]];
+            
+            // Generate a string for the price:
+            if (price != 99999)
+            {
+                var outputPrice = "$" + price;
+            }
+            else
+            {
+                var outputPrice = "[No Price Available]";
+            }
+            
+            // Concatenate the strings for this result to the output:
+            output = output + outputPath + ": " + outputPrice + "<br />";
         }
-        outputPath = outputPath + places[path[path.length - 1]];
-        
-        // Generate a string for the price:
-        if (price != 99999)
-        {
-            var outputPrice = "$" + price;
-        }
-        else
-        {
-            var outputPrice = "[No Price Available]";
-        }
-        
-        // Concatenate the strings for this result to the output:
-        output = output + outputPath + ": " + outputPrice + "<br />";
+    }
+    else
+    {
+        output = "<h2>Results</h2>No results";
     }
     document.getElementById("output").innerHTML = output;
 }
@@ -99,9 +106,9 @@ function addInput() {
         var newdiv = document.createElement("div");
         newdiv.id = "stopdiv" + stopId;
         newdiv.innerHTML = "<input type='button' value='x' "
-                + "onclick='removeInput(" + stopId + ")'> <input id='stop" 
-                + stopId + "'> Days: <input id='stop" + stopId 
-                + "days'> <br />";
+                + "onclick='removeInput(" + stopId + ")'> <input type='text'" 
+                + "id='stop" + stopId + "'> Days: <input type='number'"
+                + "id='stop" + stopId + "days'> <br />";
         document.getElementById("stopsinput").appendChild(newdiv);
         stopInputs.push(stopId);
         stopId++;
@@ -292,5 +299,5 @@ function itineraryAsHTML(path)
                 + places[path[i + 1]] + " ($" + flight.price + ")<br />";
         totalPrice += flight.price;
     }
-    return output + "<b>Total: $" + totalPrice + "</b><br />";
+    return output + "<br /><b>Total: $" + totalPrice + "</b><br />";
 }
