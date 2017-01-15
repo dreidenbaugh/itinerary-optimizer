@@ -19,23 +19,7 @@ function optimize() {
     flightsArrays = new Array(places.length - 1);
     for (var fromIndex = 0; fromIndex < places.length - 1; fromIndex++)
     {   
-        var flightsRow = new Array(places.length);
-        for (var toIndex = 1; toIndex < places.length; toIndex++)
-        {
-            if (fromIndex == 0 && toIndex > 1 && toIndex == places.length - 1)
-            {
-                break;
-            }
-            if (fromIndex == toIndex)
-            {
-                continue;
-            }
-            flightsRow[toIndex] = flightSearch(places[fromIndex], 
-                    places[toIndex], startDate);
-            console.log(places[fromIndex], places[toIndex], 
-                    flightsRow[toIndex]);
-        }
-        flightsArrays[fromIndex] = flightsRow;
+        flightsArrays[fromIndex] = new Array(places.length);
     }
     
     // Prepare variables for path calculations:
@@ -55,7 +39,7 @@ function optimize() {
     var currentTotalPrice = 0;
    
     // Do path calculations:
-    traverse(currentPath, currentUnvisitedStops, currentTotalPrice);
+    traverse(currentPath, currentUnvisitedStops, currentTotalPrice, startDate);
     
     // Sort the results:
     pathsAndPrices.sort(function(a, b){return a.price - b.price});
@@ -115,14 +99,36 @@ function removeInput(id) {
     div.parentNode.removeChild(div);
 }
 
+function flightCacheSearch(originPlaceIndex, destinationPlaceIndex, date)
+{
+    if (flightsArrays[originPlaceIndex][destinationPlaceIndex] != null)
+    {
+        var result = flightsArrays[originPlaceIndex][destinationPlaceIndex];
+    }
+    else
+    {
+        var result = flightAPISearch(places[originPlaceIndex],
+                places[destinationPlaceIndex], date);
+        console.log("Searched:", places[originPlaceIndex], 
+                places[destinationPlaceIndex], date, result);
+        if (result == null)
+        {
+            result = "No Result";
+        }
+        flightsArrays[originPlaceIndex][destinationPlaceIndex] = result;
+    }
+    return result;
+}
+
 /**
- * Returns the cheapest flight between originPlace and destinationPlace on the
- * specified date, or null if a flight could not be found
+ * Searches using the API and returns the cheapest flight between originPlace
+ * and destinationPlace on the specified date, or null if a flight could not 
+ * be found
  * @param {string} originPlace - Place code of the flight origin
  * @param {string} destinationPlace - Place code of the flight destination
  * @param {string} date - Flight date in the format "yyyy-MM-dd"
  */
-function flightSearch(originPlace, destinationPlace, date) {
+function flightAPISearch(originPlace, destinationPlace, date) {
     // Send a request:
     var xhr = new XMLHttpRequest();
     var url = "http://partners.api.skyscanner.net/apiservices/browsedates/"
@@ -142,7 +148,7 @@ function flightSearch(originPlace, destinationPlace, date) {
         // If the request returned a result, return the flight information:
         if (json.Quotes.length > 0)
         {
-            return {price: json.Quotes[0].MinPrice};
+            return {price: json.Quotes[0].MinPrice, date: date};
         }
         // Otherwise, if the request returned no results,
         else
@@ -187,8 +193,10 @@ function flightSearch(originPlace, destinationPlace, date) {
  * visited as an array of place indices
  * @param {number} previousTotalPrice - The total price of the path travelled 
  * so far
+ * @param {String} previousDate - The date of the previous flight in the path 
+ * in the format "yyyy-MM-dd"
  */
-function traverse(previousPath, previousUnvisitedStops, previousTotalPrice)
+function traverse(previousPath, previousUnvisitedStops, previousTotalPrice,         previousDate)
 {
     // For each unvisited stop ahead, 
     for (var i = 0; i < previousUnvisitedStops.length; i++)
@@ -201,10 +209,12 @@ function traverse(previousPath, previousUnvisitedStops, previousTotalPrice)
         currentUnvisitedStops.splice(currentUnvisitedStops.indexOf(
                 currentPlace), 1); // Remove current place from unvisited stops
         var currentTotalPrice = previousTotalPrice;
+        var currentDate = previousDate;
         
         // If the flight is available and the total so far is available,
-        if (flightsArrays[currentPath[currentPath.length - 2]][currentPlace] 
-                != null && currentTotalPrice != 99999)
+        if (flightCacheSearch(currentPath[currentPath.length - 2],
+                currentPlace, currentDate) !== "No Result" 
+                && currentTotalPrice != 99999)
         {
             // Add the price for the flight:
              currentTotalPrice += flightsArrays[currentPath[currentPath.length 
@@ -216,7 +226,8 @@ function traverse(previousPath, previousUnvisitedStops, previousTotalPrice)
         }
         
         // Traverse all possible paths after the current path:
-        traverse(currentPath, currentUnvisitedStops, currentTotalPrice);
+        traverse(currentPath, currentUnvisitedStops, currentTotalPrice, 
+                currentDate);
     }
     // If there are no stops left except the end,
     if (previousUnvisitedStops.length == 0)
@@ -225,8 +236,9 @@ function traverse(previousPath, previousUnvisitedStops, previousTotalPrice)
         previousPath.push(places.length - 1);
         
         // If the flight is available and the total so far is available,
-        if (flightsArrays[previousPath[previousPath.length - 2]][places.length 
-                - 1] != null && previousTotalPrice != 99999)
+        if (flightCacheSearch(previousPath[previousPath.length - 2], 
+                places.length - 1, previousDate) !== "No Result" 
+                && previousTotalPrice != 99999)
         {
             // Add the price for the last flight to the end place:
             previousTotalPrice += flightsArrays[previousPath[
