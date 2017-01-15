@@ -1,19 +1,26 @@
 var flightsArrays;
 var places;
-var pathsAndPrices = [];
-var output = "";
+var placeDays;
+var pathsAndPrices;
+var output;
 
 function optimize() {
     // Extract input from form:
     places = [];
+    placeDays = [];
     places.push(form.start.value);
+    placeDays.push(null);
     for (var i = 0; i < stopInputs.length; i++)
     {
         places.push(document.getElementById("stop" + stopInputs[i]).value);
+        placeDays.push(document.getElementById("stop" + stopInputs[i] 
+                + "days").value);
     }
     places.push(form.end.value);
-    console.log(places);
-    var startDate = form.startdate.value;
+    placeDays.push(null);
+    console.log("Places", places);
+    console.log("Days", placeDays);
+    var startDate = new Date(form.startdate.value);
     
     // Generate 3D array to use as cache for flight searches
     flightsArrays = new Array(places.length - 1);
@@ -88,9 +95,10 @@ function addInput() {
     {
         var newdiv = document.createElement("div");
         newdiv.id = "stopdiv" + stopId;
-        newdiv.innerHTML = "<input id='stop" + stopId + "'>"
-                + "<input type='button' value='x' onclick='removeInput("
-                + stopId + ")'><br />";
+        newdiv.innerHTML = "<input type='button' value='x' "
+                + "onclick='removeInput(" + stopId + ")'> <input id='stop" 
+                + stopId + "'> Days: <input id='stop" + stopId 
+                + "days'> <br />";
         document.getElementById("stopsinput").appendChild(newdiv);
         stopInputs.push(stopId);
         stopId++;
@@ -110,7 +118,7 @@ function flightCacheSearch(originPlaceIndex, destinationPlaceIndex, date)
     {
         for (var i = 0; i < array.length; i++)
         {
-            if (array[i].date === date)
+            if (array[i].date == date)
             {
                 console.log("In Cache:", places[originPlaceIndex], 
                         places[destinationPlaceIndex], date, array[i]);
@@ -118,10 +126,11 @@ function flightCacheSearch(originPlaceIndex, destinationPlaceIndex, date)
             }
         }
     }
+    var dateString = date.toISOString().substring(0, 10);
     var result = flightAPISearch(places[originPlaceIndex],
-            places[destinationPlaceIndex], date);
+            places[destinationPlaceIndex], dateString);
     console.log("Searched:", places[originPlaceIndex], 
-            places[destinationPlaceIndex], date, result);
+            places[destinationPlaceIndex], dateString, result);
     if (result == null)
     {
         result = "No Result";
@@ -203,10 +212,10 @@ function flightAPISearch(originPlace, destinationPlace, date) {
  * visited as an array of place indices
  * @param {number} previousTotalPrice - The total price of the path travelled 
  * so far
- * @param {String} previousDate - The date of the previous flight in the path 
- * in the format "yyyy-MM-dd"
+ * @param {Date} previousDate - The date of the previous flight in the path 
  */
-function traverse(previousPath, previousUnvisitedStops, previousTotalPrice,         previousDate)
+function traverse(previousPath, previousUnvisitedStops, previousTotalPrice, 
+        previousDate)
 {
     // For each unvisited stop ahead, 
     for (var i = 0; i < previousUnvisitedStops.length; i++)
@@ -219,11 +228,10 @@ function traverse(previousPath, previousUnvisitedStops, previousTotalPrice,     
         currentUnvisitedStops.splice(currentUnvisitedStops.indexOf(
                 currentPlace), 1); // Remove current place from unvisited stops
         var currentTotalPrice = previousTotalPrice;
-        var currentDate = previousDate;
         
         // If the flight is available and the total so far is available,
         var flight = flightCacheSearch(currentPath[currentPath.length - 2],
-                currentPlace, currentDate)
+                currentPlace, previousDate)
         if (flight !== "No Result" && currentTotalPrice != 99999)
         {
             // Add the price for the flight:
@@ -233,6 +241,10 @@ function traverse(previousPath, previousUnvisitedStops, previousTotalPrice,     
         {
             currentTotalPrice = 99999;
         }
+        
+        // Update the date:
+        var days = placeDays[currentPath[currentPath.length - 1]];
+        var currentDate = new Date(previousDate.valueOf() + days * 86400000);
         
         // Traverse all possible paths after the current path:
         traverse(currentPath, currentUnvisitedStops, currentTotalPrice, 
