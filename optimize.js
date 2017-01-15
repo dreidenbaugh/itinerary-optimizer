@@ -5,21 +5,15 @@ var output = "";
 
 function optimize() {
     // Extract input from form:
-    var startPlace = form.start.value;
-    var stopPlaces = form.stops.value.split(",");
-    var endPlace = form.end.value;
-    var startDate = form.startdate.value;
-    
-    // Compile list of all places:
-    if (stopPlaces[0] !== "")
+    places = [];
+    places.push(form.start.value);
+    for (var i = 0; i < stopInputs.length; i++)
     {
-        places = [startPlace].concat(stopPlaces,[endPlace]);
+        places.push(document.getElementById("stop" + stopInputs[i]).value);
     }
-    else
-    {
-        places = [startPlace, endPlace];
-    }
+    places.push(form.end.value);
     console.log(places);
+    var startDate = form.startdate.value;
     
     // Generate 2D array of cheapest flights for all possible routes
     flightsArrays = new Array(places.length - 1);
@@ -95,6 +89,30 @@ function optimize() {
         output = output + outputPath + ": " + outputPrice + "<br />";
     }
     document.getElementById("output").innerHTML = output;
+}
+
+var stopInputs = [];
+var stopId = 0;
+var maxStops = 4;
+
+function addInput() {
+    if (stopInputs.length < maxStops)
+    {
+        var newdiv = document.createElement("div");
+        newdiv.id = "stopdiv" + stopId;
+        newdiv.innerHTML = "<input id='stop" + stopId + "'>"
+                + "<input type='button' value='x' onclick='removeInput("
+                + stopId + ")'><br />";
+        document.getElementById("stopsinput").appendChild(newdiv);
+        stopInputs.push(stopId);
+        stopId++;
+    }
+}
+
+function removeInput(id) {
+    var div = document.getElementById("stopdiv" + id);
+    stopInputs.splice(stopInputs.indexOf(id), 1);
+    div.parentNode.removeChild(div);
 }
 
 /**

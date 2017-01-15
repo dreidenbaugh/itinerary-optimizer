@@ -13,21 +13,23 @@
 <script type="text/javascript" src="optimize.js"></script>
 
 <form id="form">
-  <label for="start">Start:</label>
+  <label for="start">Start:<br /></label>
   <input id="start"><br />
   
-  <label for="stops">Stops:</label>
-  <input id="stops"><br />
+  Stops:<br />
+  <div id="stopsinput"></div>
+  <input type="button" value="Add Stop" onclick="addInput()"><br />
   
-  <label for="end">End:</label>
+  <label for="end">End:<br /></label>
   <input id="end"><br />
   
-  <label for="departure-date">Start Date:</label>
+  <label for="departure-date">Start Date:<br /></label>
   <input type="date" id="startdate"><br />
   
-  <input type="button" value="Optimize" onclick="optimize()">
+  <input type="button" value="Optimize" onclick="optimize()"><br />
 </form>
 
+<h2>Results</h2>
 <p id="output"></p>
 
 </body>
