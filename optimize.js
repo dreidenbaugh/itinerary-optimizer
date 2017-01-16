@@ -5,7 +5,12 @@ var startDate
 var pathsAndPrices;
 var output;
 
-function optimize() {
+function go() {
+    // Show a progress bar:
+    document.getElementById("output").innerHTML = "<div id='progressoutline'>" 
+    + "<div id='progresslabel'>Optimizing...</div><div id='progressbar'>" 
+    + "</div></div>";
+    
     // Extract input from form:
     places = [];
     placeDays = [];
@@ -23,6 +28,10 @@ function optimize() {
     console.log("Days", placeDays);
     startDate = new Date(form.startdate.value);
     
+    setTimeout("optimize()", 5);
+}
+
+function optimize() {
     // Generate 3D array to use as cache for flight searches
     flightsArrays = new Array(places.length - 1);
     for (var i = 0; i < places.length - 1; i++)
@@ -98,7 +107,7 @@ function optimize() {
 
 var stopInputs = [];
 var stopId = 0;
-var maxStops = 4;
+var maxStops = 5;
 
 function addInput() {
     if (stopInputs.length < maxStops)
@@ -164,7 +173,14 @@ function flightAPISearch(originPlace, destinationPlace, date) {
             + "v1.0/US/USD/en-US/" + originPlace + "/" + destinationPlace + "/"
             + date + "?apiKey=" + config.API_KEY;
     xhr.open("GET", url, false)
-    xhr.send();
+    try
+    {
+        xhr.send();
+    }
+    catch(e)
+    {
+        alert("An unknown error occurred during the search");
+    }
     
     // Parse the response:
     console.log("Status:", xhr.status);

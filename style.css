@@ -24,3 +24,20 @@ input[type=date]{
 input[type=button]{
   margin-top: 5px;
 }
+#progressoutline {
+  position: relative;
+  margin: 20px auto;
+  width: 200px;
+  height: 30px;
+  background-color: silver;
+}
+#progressbar {
+  position: absolute;
+  width: 0%;
+  height: 100%;
+  background-color: gray;
+}
+#progresslabel{
+  text-align: center;
+  line-height: 30px;
+}
