@@ -3,6 +3,7 @@ var places;
 var placeDays;
 var startDate
 var pathsAndPrices;
+var numPaths;
 var output;
 
 function go() {
@@ -27,6 +28,8 @@ function go() {
     console.log("Places", places);
     console.log("Days", placeDays);
     startDate = new Date(form.startdate.value);
+    
+    numPaths = factorial(stopInputs.length);
     
     setTimeout("optimize()", 5);
 }
@@ -298,6 +301,7 @@ function traverse(previousPath, previousUnvisitedStops, previousTotalPrice,
         // Add the final path and price to pathsAndPrices:
         pathsAndPrices.push({path: previousPath, price: previousTotalPrice});
         console.log("Saved:", previousPath, previousTotalPrice);
+        updateProgress();
     }
 }
 
@@ -316,4 +320,27 @@ function itineraryAsHTML(path)
         totalPrice += flight.price;
     }
     return output + "<br /><b>Total: $" + totalPrice + "</b><br />";
+}
+
+function factorial(number)
+{
+    if (number < 0)
+    {
+        return -1;
+    }
+    else if (number == 0)
+    {
+        return 1;
+    }
+    else
+    {
+        return number * factorial(number - 1);
+    }
+}
+
+function updateProgress()
+{
+    var progress = pathsAndPrices.length / numPaths * 100;
+    document.getElementById("progressbar").style.width = progress + "%";
+    console.log("Progress:", progress);
 }
