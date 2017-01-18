@@ -2,28 +2,50 @@ body {
   font-family: sans-serif;
   text-align: center;
 }
+
 label {
   margin-top: 10px;
   display:inline-block;
 }
-form {
-  width: 200px;
-  padding-bottom: 20px;
-  border: 2px solid black;
-  margin: auto;
-}
+
 input[type=text]{
   width: 42px;
 }
+
 input[type=number]{
   width: 32px;
 }
+
 input[type=date]{
   width: 125px;
 }
+
 input[type=button]{
   margin-top: 5px;
 }
+
+#top {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: 80px;
+  background-color: gray;
+  margin: 0;
+}
+
+#form {
+  position: fixed;
+  left: 0; top: 80px; bottom: 0px;
+  width: 200px;
+  background-color: silver;
+  padding-bottom: 20px;
+  overflow-y: auto;
+}
+
+#main {
+  position: absolute;
+  left: 200px; right: 0; top: 80px; bottom: 0;
+}
+
 #progressoutline {
   position: relative;
   margin: 20px auto;
@@ -31,12 +53,14 @@ input[type=button]{
   height: 30px;
   background-color: silver;
 }
+
 #progressbar {
   position: absolute;
   width: 0%;
   height: 100%;
   background-color: gray;
 }
+
 #progresslabel{
   text-align: center;
   line-height: 30px;
