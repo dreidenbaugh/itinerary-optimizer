@@ -71,9 +71,7 @@ function optimize() {
     // Output the results:
     if(pathsAndPrices[0].price != 99999)
     {
-        output = "<h2>Results</h2><h3>Cheapest Itinerary</h3>";
-        output = output + itineraryAsHTML(pathsAndPrices[0].path)
-                + "<h3>All Itineraries</h3>";
+        output = "<h2>Results</h2><dl id='itinerarylist'>";
         for (var i = 0; i < pathsAndPrices.length; i++)
         {
             var path = pathsAndPrices[i].path;
@@ -98,14 +96,35 @@ function optimize() {
             }
             
             // Concatenate the strings for this result to the output:
-            output = output + outputPath + ": " + outputPrice + "<br />";
+            output = output + "<dt><a href=''>" + outputPath + ": " + outputPrice
+                    + "</a></dt><dd id='result" + i + "'></dd>";
         }
+        output = output + "</dl>";
     }
     else
     {
         output = "<h2>Results</h2>No results";
     }
     document.getElementById("output").innerHTML = output;
+    
+    (function($) {
+        var itineraries = $('#itinerarylist > dd').hide();
+        expand($('#result0'), 0);
+        
+        $('#itinerarylist > dt > a').click(function() {
+            var description = $(this).parent().next();
+            var listNumber = description.attr('id').substring(6, 7);
+            expand(description, listNumber);
+            return false;
+        });
+        
+        function expand(description, itemNumber) {
+            itineraries.hide();
+            var path = pathsAndPrices[itemNumber].path;
+            description.html(itineraryAsHTML(path));
+            description.show();
+        }
+    })(jQuery);
 }
 
 var stopInputs = [];
@@ -307,7 +326,7 @@ function traverse(previousPath, previousUnvisitedStops, previousTotalPrice,
 
 function itineraryAsHTML(path)
 {
-    var output = "";
+    var output = "<ul>";
     var date = startDate;
     var totalPrice = 0;
     for (var i = 0; i < path.length - 1; i++)
@@ -315,11 +334,11 @@ function itineraryAsHTML(path)
         var days = placeDays[path[i]];
         date = new Date(date.valueOf() + days * 86400000);
         var flight = flightCacheSearch(path[i], path[i + 1], date);
-        output = output + flight.date + ": " + places[path[i]] + "–" 
-                + places[path[i + 1]] + " ($" + flight.price + ")<br />";
+        output = output + "<li>" + flight.date + ": " + places[path[i]] + "–" 
+                + places[path[i + 1]] + " ($" + flight.price + ")</li>";
         totalPrice += flight.price;
     }
-    return output + "<br /><b>Total: $" + totalPrice + "</b><br />";
+    return output + "</ul>";
 }
 
 function factorial(number)

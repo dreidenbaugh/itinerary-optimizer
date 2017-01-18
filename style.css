@@ -1,6 +1,5 @@
 body {
   font-family: sans-serif;
-  text-align: center;
 }
 
 label {
@@ -30,6 +29,7 @@ input[type=button]{
   height: 80px;
   background-color: gray;
   margin: 0;
+  padding-left: 20px;
 }
 
 #form {
@@ -39,11 +39,23 @@ input[type=button]{
   background-color: silver;
   padding-bottom: 20px;
   overflow-y: auto;
+  text-align: center;
 }
 
 #main {
   position: absolute;
   left: 200px; right: 0; top: 80px; bottom: 0;
+  overflow-y: auto;
+  padding-left: 20px;
+}
+
+#itinerarylist dt a{
+  color: black;
+  font-weight: bold;
+}
+
+#itinerarylist dd {
+  margin: 0;
 }
 
 #progressoutline {
