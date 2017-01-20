@@ -102,3 +102,7 @@ input[type=button]{
   text-align: center;
   line-height: 30px;
 }
+
+.error{
+  color: red;
+}

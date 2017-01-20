@@ -13,21 +13,73 @@ function go() {
     + "</div></div>";
     
     // Extract input from form:
+    (function($) {
+        $("input").css({"border": "solid 1px white"});
+    })(jQuery);
+    var errorText = "<div class='error'>";
     places = [];
     placeDays = [];
     places.push(form.start.value);
+    if (form.start.value == "")
+    {
+        (function($) {
+            $("#start").css({"border": "solid 2px red"});
+        })(jQuery);
+        errorText += "A start location must be provided.<br />";
+    }
     placeDays.push(null);
+    
+    startDate = new Date(form.startdate.value);
+    
+    console.log(startDate.getTime());
+    console.log((new Date()).getTime());
+    if (form.startdate.value === "" || 
+            startDate.getTime() < (new Date()).getTime())
+    {
+        (function($) {
+            $("#startdate").css({"border": "solid 2px red"});
+        })(jQuery);
+        errorText += "A start date after today must be provided.<br />";
+    }
+    
     for (var i = 0; i < stopInputs.length; i++)
     {
-        places.push(document.getElementById("stop" + stopInputs[i]).value);
-        placeDays.push(document.getElementById("stop" + stopInputs[i] 
-                + "days").value);
+        var stopInputId = "#stop" + stopInputs[i];
+        var daysInputId = "#stop" + stopInputs[i] + "days";
+        (function($) {
+            places.push($(stopInputId).val());
+            if ($(stopInputId).val() == "")
+            {
+                $(stopInputId).css({"border": "solid 2px red"});
+                errorText += "A stop location must be provided.<br />";
+            }
+            if ($(daysInputId).val() < 0)
+            {
+                $(daysInputId).css({"border": "solid 2px red"});
+                errorText += "The stop length must be at least 0 days.<br />";
+            }
+            placeDays.push($(daysInputId).val());
+        })(jQuery);
     }
+    
     places.push(form.end.value);
+    if (form.end.value == "")
+    {
+        (function($) {
+            $("#end").css({"border": "solid 2px red"});
+        })(jQuery);
+        errorText += "An end location must be provided.<br />";
+    }
     placeDays.push(null);
     console.log("Places", places);
     console.log("Days", placeDays);
-    startDate = new Date(form.startdate.value);
+    
+    if (errorText !== "<div class='error'>")
+    {
+        errorText += "</div>";
+        document.getElementById("output").innerHTML = errorText;
+        return false;
+    }
     
     numPaths = factorial(stopInputs.length);
     
