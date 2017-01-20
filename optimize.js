@@ -136,7 +136,7 @@ function addInput() {
     {
         var newdiv = document.createElement("div");
         newdiv.id = "stopdiv" + stopId;
-        newdiv.innerHTML = "<input type='button' value='x' "
+        newdiv.innerHTML = "<input type='button' value='&#10006;' "
                 + "onclick='removeInput(" + stopId + ")'> <input type='text'" 
                 + "id='stop" + stopId + "'> Days: <input type='number'"
                 + "id='stop" + stopId + "days'> <br />";

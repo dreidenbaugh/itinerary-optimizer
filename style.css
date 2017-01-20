@@ -1,43 +1,24 @@
 body {
-  font-family: sans-serif;
-}
-
-label {
-  margin-top: 10px;
-  display:inline-block;
-}
-
-input[type=text]{
-  width: 42px;
-}
-
-input[type=number]{
-  width: 32px;
-}
-
-input[type=date]{
-  width: 125px;
-}
-
-input[type=button]{
-  margin-top: 5px;
+  font-family: "Trebuchet MS", sans-serif;
 }
 
 #top {
   position: fixed;
   top: 0; left: 0; right: 0;
   height: 80px;
-  background-color: gray;
   margin: 0;
   padding-left: 20px;
+  background-color: #565656;
+  color: white;
 }
 
 #form {
   position: fixed;
-  left: 0; top: 80px; bottom: 0px;
+  left: 0; top: 80px; bottom: 0;
   width: 200px;
-  background-color: silver;
   padding-bottom: 20px;
+  background-color: #0375B4;
+  color: #FFFFFF;
   overflow-y: auto;
   text-align: center;
 }
@@ -47,10 +28,54 @@ input[type=button]{
   left: 200px; right: 0; top: 80px; bottom: 0;
   overflow-y: auto;
   padding-left: 20px;
+  background-color: #EFEFEF;
+  color: #00000;
+}
+
+label {
+  margin-top: 10px;
+  display: inline-block;
+  font-weight:bold;
+}
+
+input {
+  padding: 5px;
+  border: solid 1px white;
+  background: transparent;
+  font-family: inherit;
+  color: inherit;
+}
+
+input[type=text]{
+  width: 40px;
+}
+
+input[type=number]{
+  width: 32px;
+}
+
+input[type=date]{
+  width: 105px;
+}
+
+input[type=date]::-webkit-calendar-picker-indicator   {
+  opacity: 1;
+}
+
+input[type=date]::-webkit-inner-spin-button,
+input[type=date]::-webkit-clear-button {
+  -webkit-appearance: none;
+}
+
+input[type=button]{
+  margin-top: 5px;
+  border: none;
+  background: white;
+  color: #0375B4;
 }
 
 #itinerarylist dt a{
-  color: black;
+  color: inherit;
   font-weight: bold;
 }
 
