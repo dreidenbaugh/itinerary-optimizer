@@ -106,3 +106,8 @@ input[type=button]{
 .error{
   color: red;
 }
+
+#map {
+  height: 400px;
+  width: 600px;
+}

@@ -245,7 +245,7 @@ function flightAPISearch(originPlace, destinationPlace, date) {
     var xhr = new XMLHttpRequest();
     var url = "http://partners.api.skyscanner.net/apiservices/browsedates/"
             + "v1.0/US/USD/en-US/" + originPlace + "/" + destinationPlace + "/"
-            + date + "?apiKey=" + config.API_KEY;
+            + date + "?apiKey=" + config.SKYSCANNER_API_KEY;
     xhr.open("GET", url, false)
     try
     {
@@ -414,4 +414,21 @@ function updateProgress()
     var progress = pathsAndPrices.length / numPaths * 100;
     document.getElementById("progressbar").style.width = progress + "%";
     console.log("Progress:", progress);
+}
+
+var script = document.createElement("script");
+script.src = "https://maps.googleapis.com/maps/api/js?key="
+        + config.GMAPS_API_KEY;
+script.onload = showMap;
+document.getElementsByTagName('head')[0].appendChild(script);
+console.log("Map loaded...");
+
+function showMap()
+{
+    console.log("Showing map...");
+    var map = new google.maps.Map(document.getElementById("map"),
+    {
+        zoom: 1,
+        center: {lat: 0, lng: 0}
+    });
 }
