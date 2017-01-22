@@ -421,14 +421,38 @@ script.src = "https://maps.googleapis.com/maps/api/js?key="
         + config.GMAPS_API_KEY;
 script.onload = showMap;
 document.getElementsByTagName('head')[0].appendChild(script);
-console.log("Map loaded...");
 
 function showMap()
 {
-    console.log("Showing map...");
     var map = new google.maps.Map(document.getElementById("map"),
     {
         zoom: 1,
         center: {lat: 0, lng: 0}
     });
+}
+
+var locationInfo = [];
+
+function getCoordinates(codes)
+{
+    (function($) {
+        $.ajax({
+            method: "GET",
+            url: "http://partners.api.skyscanner.net/apiservices/geo/v1.0?apikey="
+                + config.SKYSCANNER_API_KEY,
+            dataType: 'xml',
+            success: function (response) {
+                var xml = response;
+                $.each(codes, function(index, code) {
+                    $(xml).find('City[IataCode="' + code + '"]').each(function () {
+                        var coordinateStrings = $(this).attr('Location').split(', ');
+                        var lat = parseFloat(coordinateStrings[0]);
+                        var lng = parseFloat(coordinateStrings[1]);
+                        var coordinates = {latitude: lat, longitude: lng};
+                        locationInfo.push({code: code, coordinates: coordinates});
+                    });
+                });
+            }
+        });
+    })(jQuery);
 }
