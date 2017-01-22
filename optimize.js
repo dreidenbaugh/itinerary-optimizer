@@ -71,6 +71,9 @@ function go() {
         errorText += "An end location must be provided.<br />";
     }
     placeDays.push(null);
+    
+    getCoordinates(places, addMapMarkers);
+    
     console.log("Places", places);
     console.log("Days", placeDays);
     
@@ -423,9 +426,11 @@ script.onload = showMap;
 document.getElementsByTagName('head')[0].appendChild(script);
 
 var map;
+var mapBounds;
 
 function showMap()
 {
+    mapBounds = new google.maps.LatLngBounds();
     map = new google.maps.Map(document.getElementById("map"),
     {
         zoom: 1,
@@ -435,7 +440,7 @@ function showMap()
 
 var locationInfo = [];
 
-function getCoordinates(codes)
+function getCoordinates(codes, callback)
 {
     (function($) {
         $.ajax({
@@ -455,6 +460,7 @@ function getCoordinates(codes)
                         console.log({code: code, coordinates: coordinates});
                     });
                 });
+                callback();
             }
         });
     })(jQuery);
@@ -468,5 +474,8 @@ function addMapMarkers()
             position: locationInfo[i].coordinates,
             map: map
         });
+        mapBounds.extend(locationInfo[i].coordinates);
     }
+    map.fitBounds(mapBounds);
+    map.panToBounds(mapBounds);
 }
