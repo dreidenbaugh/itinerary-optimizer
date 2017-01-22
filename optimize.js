@@ -422,9 +422,11 @@ script.src = "https://maps.googleapis.com/maps/api/js?key="
 script.onload = showMap;
 document.getElementsByTagName('head')[0].appendChild(script);
 
+var map;
+
 function showMap()
 {
-    var map = new google.maps.Map(document.getElementById("map"),
+    map = new google.maps.Map(document.getElementById("map"),
     {
         zoom: 1,
         center: {lat: 0, lng: 0}
@@ -446,13 +448,25 @@ function getCoordinates(codes)
                 $.each(codes, function(index, code) {
                     $(xml).find('City[IataCode="' + code + '"]').each(function () {
                         var coordinateStrings = $(this).attr('Location').split(', ');
-                        var lat = parseFloat(coordinateStrings[0]);
-                        var lng = parseFloat(coordinateStrings[1]);
-                        var coordinates = {latitude: lat, longitude: lng};
+                        var lat = parseFloat(coordinateStrings[1]);
+                        var lng = parseFloat(coordinateStrings[0]);
+                        var coordinates = {lat: lat, lng: lng};
                         locationInfo.push({code: code, coordinates: coordinates});
+                        console.log({code: code, coordinates: coordinates});
                     });
                 });
             }
         });
     })(jQuery);
+}
+
+function addMapMarkers()
+{
+    for (var i = 0; i < locationInfo.length; i++)
+    {
+        var marker = new google.maps.Marker({
+            position: locationInfo[i].coordinates,
+            map: map
+        });
+    }
 }
