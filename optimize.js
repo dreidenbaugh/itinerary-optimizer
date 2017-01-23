@@ -5,6 +5,7 @@ var startDate
 var pathsAndPrices;
 var numPaths;
 var output;
+var coordinatesObtained;
 
 function go() {
     // Show a progress bar:
@@ -72,7 +73,9 @@ function go() {
     }
     placeDays.push(null);
     
-    getCoordinates(places, addMapMarkers);
+    coordinatesObtained = getCoordinates(places).done(function() {
+      addMapMarkers();  
+    });
     
     console.log("Places", places);
     console.log("Days", placeDays);
@@ -178,6 +181,9 @@ function optimize() {
             var path = pathsAndPrices[itemNumber].path;
             description.html(itineraryAsHTML(path));
             description.show();
+            $.when(coordinatesObtained).done(function() {
+                addMapLine(path);
+            });
         }
     })(jQuery);
 }
@@ -426,22 +432,29 @@ script.onload = showMap;
 document.getElementsByTagName('head')[0].appendChild(script);
 
 var map;
-var mapBounds;
+var pathLine;
 
 function showMap()
 {
-    mapBounds = new google.maps.LatLngBounds();
     map = new google.maps.Map(document.getElementById("map"),
     {
         zoom: 1,
         center: {lat: 0, lng: 0}
     });
+    pathLine = new google.maps.Polyline({
+        geodesic: true,
+        strokeColor: '#565656',
+        strokeOpacity: 0.8,
+        strokeWeight: 5
+    });
 }
 
-var locationInfo = [];
+var locationInfo;
 
-function getCoordinates(codes, callback)
+function getCoordinates(codes)
 {
+    var deferred = $.Deferred();
+    locationInfo = [];
     (function($) {
         $.ajax({
             method: "GET",
@@ -460,22 +473,50 @@ function getCoordinates(codes, callback)
                         console.log({code: code, coordinates: coordinates});
                     });
                 });
-                callback();
+                deferred.resolve();
             }
         });
     })(jQuery);
+    return deferred.promise();
 }
+
+var markers = [];
 
 function addMapMarkers()
 {
+    clearMap();
+    var mapBounds = new google.maps.LatLngBounds();
     for (var i = 0; i < locationInfo.length; i++)
     {
         var marker = new google.maps.Marker({
             position: locationInfo[i].coordinates,
+            icon: "https://maps.google.com/mapfiles/ms/micons/blue-dot.png",
             map: map
         });
+        markers.push(marker);
         mapBounds.extend(locationInfo[i].coordinates);
     }
     map.fitBounds(mapBounds);
     map.panToBounds(mapBounds);
+}
+
+function clearMap()
+{
+    for (var i = 0; i < markers.length; i++)
+    {
+        markers[i].setMap(null);
+    }
+    markers = [];
+    pathLine.setMap(null);
+}
+
+function addMapLine(path)
+{
+    var pathCoordinates = [];
+    for (var i = 0; i < path.length; i++)
+    {
+        pathCoordinates.push(locationInfo[path[i]].coordinates);
+    }
+    pathLine.setPath(pathCoordinates);
+    pathLine.setMap(map);
 }
