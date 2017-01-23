@@ -32,8 +32,6 @@ function go() {
     
     startDate = new Date(form.startdate.value);
     
-    console.log(startDate.getTime());
-    console.log((new Date()).getTime());
     if (form.startdate.value === "" || 
             startDate.getTime() < (new Date()).getTime())
     {
@@ -171,7 +169,7 @@ function optimize() {
         
         $('#itinerarylist > dt > a').click(function() {
             var description = $(this).parent().next();
-            var listNumber = description.attr('id').substring(6, 7);
+            var listNumber = description.attr('id').substring(6);
             expand(description, listNumber);
             return false;
         });
@@ -438,8 +436,11 @@ function showMap()
 {
     map = new google.maps.Map(document.getElementById("map"),
     {
-        zoom: 1,
-        center: {lat: 0, lng: 0}
+        zoom: 2,
+        center: {lat: 0, lng: 0},
+        mapTypeControl: false,
+        zoomControl: false,
+        streetViewControl: false
     });
     pathLine = new google.maps.Polyline({
         geodesic: true,
