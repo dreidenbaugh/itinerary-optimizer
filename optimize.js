@@ -465,20 +465,37 @@ function getCoordinates(codes)
             success: function (response) {
                 var xml = response;
                 $.each(codes, function(index, code) {
-                    $(xml).find('City[IataCode="' + code + '"]').each(function () {
-                        var coordinateStrings = $(this).attr('Location').split(', ');
-                        var lat = parseFloat(coordinateStrings[1]);
-                        var lng = parseFloat(coordinateStrings[0]);
-                        var coordinates = {lat: lat, lng: lng};
-                        locationInfo.push({code: code, coordinates: coordinates});
-                        console.log({code: code, coordinates: coordinates});
-                    });
+                    var $cityResults = $(xml).find('City[IataCode="' + code + '"]');
+                    if ($cityResults.length == 1)
+                    {
+                        $cityResults.each(function() {
+                            storeCoordinates($(this), code);
+                        });
+                    }
+                    else
+                    {
+                        $(xml).find('Airport[Id="' + code + '"]').each(function() {
+                            storeCoordinates($(this), code);
+                        });
+                    }
                 });
                 deferred.resolve();
             }
         });
     })(jQuery);
     return deferred.promise();
+}
+
+function storeCoordinates(result, code)
+{
+    (function($) {
+        var coordinateStrings = result.attr('Location').split(', ');
+        var lat = parseFloat(coordinateStrings[1]);
+        var lng = parseFloat(coordinateStrings[0]);
+        var coordinates = {lat: lat, lng: lng};
+        locationInfo.push({code: code, coordinates: coordinates});
+        console.log({code: code, coordinates: coordinates});
+    })(jQuery);
 }
 
 var markers = [];
