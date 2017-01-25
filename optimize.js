@@ -7,45 +7,53 @@ var numPaths;
 var output;
 var coordinatesObtained;
 
+/**
+ * Processes and validates the form input and then starts optimize()
+ */
 function go() {
     // Show a progress bar:
     document.getElementById("output").innerHTML = "<div id='progressoutline'>" 
     + "<div id='progresslabel'>Optimizing...</div><div id='progressbar'>" 
     + "</div></div>";
     
-    // Extract input from form:
-    (function($) {
-        $("input").css({"border": "solid 1px white"});
+    // Reset all text input borders and clear error text:
+    (function ($) {
+        $("input[type=text]").css({"border": "solid 1px white"});
     })(jQuery);
     var errorText = "<div class='error'>";
+    
+    // Clear place and placeDays arrays:
     places = [];
     placeDays = [];
+    
+    // Add and validate the start place
     places.push(form.start.value);
     if (form.start.value == "")
     {
-        (function($) {
+        (function ($) {
             $("#start").css({"border": "solid 2px red"});
         })(jQuery);
         errorText += "A start location must be provided.<br />";
     }
-    placeDays.push(null);
+    placeDays.push(null); // Number of days is not applicable
     
+    // Store the start date and check that it is after today
     startDate = new Date(form.startdate.value);
-    
     if (form.startdate.value === "" || 
             startDate.getTime() < (new Date()).getTime())
     {
-        (function($) {
+        (function ($) {
             $("#startdate").css({"border": "solid 2px red"});
         })(jQuery);
         errorText += "A start date after today must be provided.<br />";
     }
     
+    // For each stop input, validate and store the place and number of days
     for (var i = 0; i < stopInputs.length; i++)
     {
         var stopInputId = "#stop" + stopInputs[i];
         var daysInputId = "#stop" + stopInputs[i] + "days";
-        (function($) {
+        (function ($) {
             places.push($(stopInputId).val());
             if ($(stopInputId).val() == "")
             {
@@ -61,23 +69,18 @@ function go() {
         })(jQuery);
     }
     
+    // Add and validate the end place
     places.push(form.end.value);
     if (form.end.value == "")
     {
-        (function($) {
+        (function ($) {
             $("#end").css({"border": "solid 2px red"});
         })(jQuery);
         errorText += "An end location must be provided.<br />";
     }
-    placeDays.push(null);
+    placeDays.push(null); // Number of days is not applicable
     
-    coordinatesObtained = getCoordinates(places).done(function() {
-      addMapMarkers();  
-    });
-    
-    console.log("Places", places);
-    console.log("Days", placeDays);
-    
+    // If an input was invalid, add the error text to page and stop program
     if (errorText !== "<div class='error'>")
     {
         errorText += "</div>";
@@ -85,11 +88,21 @@ function go() {
         return false;
     }
     
+    // Get coordinates for places; after, add map markers for the coordinates
+    coordinatesObtained = getCoordinates(places).done(function () {
+      addMapMarkers();  
+    });
+    
+    // Calculate the total number of paths
     numPaths = factorial(stopInputs.length);
     
+    // Begin optimize function after short timeout for progress bar to update
     setTimeout("optimize()", 5);
 }
 
+/**
+ * Determine the prices for all paths and output a sorted list to the web page
+ */
 function optimize() {
     // Generate 3D array to use as cache for flight searches
     flightsArrays = new Array(places.length - 1);
@@ -122,10 +135,10 @@ function optimize() {
     traverse(currentPath, currentUnvisitedStops, currentTotalPrice, startDate);
     
     // Sort the results:
-    pathsAndPrices.sort(function(a, b){return a.price - b.price});
+    pathsAndPrices.sort(function (a, b){return a.price - b.price});
     
     // Output the results:
-    if(pathsAndPrices[0].price != 99999)
+    if (pathsAndPrices[0].price != 99999)
     {
         output = "<h2>Results</h2><dl id='itinerarylist'>";
         for (var i = 0; i < pathsAndPrices.length; i++)
@@ -152,7 +165,8 @@ function optimize() {
             }
             
             // Concatenate the strings for this result to the output:
-            output = output + "<dt><a href=''>" + outputPath + ": " + outputPrice
+            output = output + "<dt><a href=''>" + outputPath + ": " 
+                    + outputPrice
                     + "</a></dt><dd id='result" + i + "'></dd>";
         }
         output = output + "</dl>";
@@ -163,11 +177,11 @@ function optimize() {
     }
     document.getElementById("output").innerHTML = output;
     
-    (function($) {
+    (function ($) {
         var itineraries = $('#itinerarylist > dd').hide();
         expand($('#result0'), 0);
         
-        $('#itinerarylist > dt > a').click(function() {
+        $('#itinerarylist > dt > a').click(function () {
             var description = $(this).parent().next();
             var listNumber = description.attr('id').substring(6);
             expand(description, listNumber);
@@ -179,7 +193,7 @@ function optimize() {
             var path = pathsAndPrices[itemNumber].path;
             description.html(itineraryAsHTML(path));
             description.show();
-            $.when(coordinatesObtained).done(function() {
+            $.when(coordinatesObtained).done(function () {
                 addMapLine(path);
             });
         }
@@ -190,6 +204,9 @@ var stopInputs = [];
 var stopId = 0;
 var maxStops = 5;
 
+/**
+ * Adds a stop input row to the web page form
+ */
 function addInput() {
     if (stopInputs.length < maxStops)
     {
@@ -205,16 +222,32 @@ function addInput() {
     }
 }
 
+/**
+ * Removes a stop input row from the web page form
+ */
 function removeInput(id) {
     var div = document.getElementById("stopdiv" + id);
     stopInputs.splice(stopInputs.indexOf(id), 1);
     div.parentNode.removeChild(div);
 }
 
+/**
+ * Searches the cache for the specified flight and returns the flight if it
+ * is found; if it is not in the cache, it initiates an API search for the
+ * flight and returns the result or "No Result" if the search has no results
+ * 
+ * @param {number} originPlaceIndex - The index in places[] of the place code 
+ * of the flight origin
+ * @param {number} destinationPlaceIndex - The index in places[] of the place 
+ * code of the flight destination
+ * @param {Date} date - Flight date
+ */
 function flightCacheSearch(originPlaceIndex, destinationPlaceIndex, date)
 {
     var dateString = date.toISOString().substring(0, 10);
+    // Get the array of flights for that route:
     var array = flightsArrays[originPlaceIndex][destinationPlaceIndex];
+    // Return any cached flight for that route with a matching date
     if (array.length > 0)
     {
         for (var i = 0; i < array.length; i++)
@@ -227,10 +260,13 @@ function flightCacheSearch(originPlaceIndex, destinationPlaceIndex, date)
             }
         }
     }
+    
+    // If the flight was not in the cache, search the flight using the API:
     var result = flightAPISearch(places[originPlaceIndex],
             places[destinationPlaceIndex], dateString);
     console.log("Searched:", places[originPlaceIndex], 
             places[destinationPlaceIndex], dateString, result);
+    // Add to the array and return the result (or "No Result")
     if (result == null)
     {
         result = "No Result";
@@ -243,6 +279,7 @@ function flightCacheSearch(originPlaceIndex, destinationPlaceIndex, date)
  * Searches using the API and returns the cheapest flight between originPlace
  * and destinationPlace on the specified date, or null if a flight could not 
  * be found
+ * 
  * @param {string} originPlace - Place code of the flight origin
  * @param {string} destinationPlace - Place code of the flight destination
  * @param {string} date - Flight date in the format "yyyy-MM-dd"
@@ -310,9 +347,10 @@ function flightAPISearch(originPlace, destinationPlace, date) {
 }
 
 /**
- * Based on the current path travelled so far, recursively traverse all 
- * possible paths to the end place and add each path and its total price to 
+ * Based on the current path travelled so far, recursively traverses all 
+ * possible paths to the end place and adds each path and its total price to 
  * pathsAndPrices
+ * 
  * @param {number[]} previousPath - The path travelled so far as an array of 
  * place indices
  * @param {number[]} previousUnvisitedStops - The stops that have not yet been 
@@ -383,6 +421,11 @@ function traverse(previousPath, previousUnvisitedStops, previousTotalPrice,
     }
 }
 
+/**
+ * Returns the given path as an HTML list detailing the itinerary
+ * 
+ * @param {number[]} path - Path as an array of place indices
+ */
 function itineraryAsHTML(path)
 {
     var output = "<ul>";
@@ -400,6 +443,11 @@ function itineraryAsHTML(path)
     return output + "</ul>";
 }
 
+/**
+ * Returns the factorial of a number, or -1 if the number is negative
+ *
+ * @param {number} number - the number of which to calculate the factorial
+ */
 function factorial(number)
 {
     if (number < 0)
@@ -416,6 +464,10 @@ function factorial(number)
     }
 }
 
+/**
+ * Calculates the progress percentage out of 100 based on the number of paths
+ * whose prices have been found and updates the progress bar width
+ */
 function updateProgress()
 {
     var progress = pathsAndPrices.length / numPaths * 100;
@@ -423,6 +475,7 @@ function updateProgress()
     console.log("Progress:", progress);
 }
 
+// Add the Google Maps script to the web page:
 var script = document.createElement("script");
 script.src = "https://maps.googleapis.com/maps/api/js?key="
         + config.GMAPS_API_KEY;
@@ -432,6 +485,9 @@ document.getElementsByTagName('head')[0].appendChild(script);
 var map;
 var pathLine;
 
+/**
+ * Set the map and path line options, causing the map to show
+ */
 function showMap()
 {
     map = new google.maps.Map(document.getElementById("map"),
@@ -452,29 +508,37 @@ function showMap()
 
 var locationInfo;
 
+/**
+ * Uses the API to find the coordinates of each place code in the specified
+ * array
+ *
+ * @param {string[]} codes - Array of place codes
+ */
 function getCoordinates(codes)
 {
     var deferred = $.Deferred();
     locationInfo = [];
-    (function($) {
+    (function ($) {
         $.ajax({
             method: "GET",
-            url: "http://partners.api.skyscanner.net/apiservices/geo/v1.0?apikey="
-                + config.SKYSCANNER_API_KEY,
+            url: "http://partners.api.skyscanner.net/apiservices/geo/" +
+                    "v1.0?apikey=" + config.SKYSCANNER_API_KEY,
             dataType: 'xml',
             success: function (response) {
                 var xml = response;
-                $.each(codes, function(index, code) {
-                    var $cityResults = $(xml).find('City[IataCode="' + code + '"]');
+                $.each(codes, function (index, code) {
+                    var $cityResults = $(xml).find('City[IataCode="' + code 
+                            + '"]');
                     if ($cityResults.length == 1)
                     {
-                        $cityResults.each(function() {
+                        $cityResults.each(function () {
                             storeCoordinates($(this), code);
                         });
                     }
                     else
                     {
-                        $(xml).find('Airport[Id="' + code + '"]').each(function() {
+                        $(xml).find('Airport[Id="' + code + '"]')
+                                .each(function () {
                             storeCoordinates($(this), code);
                         });
                     }
@@ -486,9 +550,16 @@ function getCoordinates(codes)
     return deferred.promise();
 }
 
+/**
+ * Extracts from the JQuery result and stores in locationInfo the coordinates 
+ * of the specified place code
+ *
+ * {JQuery} result - The JQuery object containing the result from the database
+ * {string} code - The place code
+ */
 function storeCoordinates(result, code)
 {
-    (function($) {
+    (function ($) {
         var coordinateStrings = result.attr('Location').split(', ');
         var lat = parseFloat(coordinateStrings[1]);
         var lng = parseFloat(coordinateStrings[0]);
@@ -500,6 +571,9 @@ function storeCoordinates(result, code)
 
 var markers = [];
 
+/**
+ * Adds to the map a marker for each place in locationInfo
+ */
 function addMapMarkers()
 {
     clearMap();
@@ -518,6 +592,9 @@ function addMapMarkers()
     map.panToBounds(mapBounds);
 }
 
+/**
+ * Deletes all markers from the map and hides the path line
+ */
 function clearMap()
 {
     for (var i = 0; i < markers.length; i++)
@@ -528,6 +605,11 @@ function clearMap()
     pathLine.setMap(null);
 }
 
+/**
+ * Plots on the map a line showing the path
+ *
+ * @param {number[]} path - Path as an array of place indices
+ */
 function addMapLine(path)
 {
     var pathCoordinates = [];
