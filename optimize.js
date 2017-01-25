@@ -1,11 +1,17 @@
-var flightsArrays;
-var places;
-var placeDays;
-var startDate
-var pathsAndPrices;
-var numPaths;
-var output;
-var coordinatesObtained;
+var coordinatesObtained; // Promise indicating if getCoordinates is done
+var flightsArrays; // 3D array that is cache of searched flights
+var locationInfo; // Object array containing place codes and their coordinates
+var map; // Map object displayed on the page
+var markers = []; // Array of map markers
+const maxStops = 5; // Maximum number of stop rows allowed in form
+var numPaths; // The total number of paths that will be followed
+var pathsAndPrices; // Object array containing paths and their prices
+var pathLine; // Polyline object representing the path
+var placeDays; // Number array of days at each stop from input
+var places; // String array of place codes from input
+var startDate; // Date object representing start date from input
+var stopInputs = []; // Number array of stop input ID numbers
+var stopId = 0; // The ID number of the next stop input
 
 /**
  * Processes and validates the form input and then starts optimize()
@@ -13,12 +19,14 @@ var coordinatesObtained;
 function go() {
     // Show a progress bar:
     document.getElementById("output").innerHTML = "<div id='progressoutline'>" 
-    + "<div id='progresslabel'>Optimizing...</div><div id='progressbar'>" 
-    + "</div></div>";
+            + "<div id='progresslabel'>Optimizing...</div>"
+            + "<div id='progressbar'></div></div>";
     
     // Reset all text input borders and clear error text:
     (function ($) {
-        $("input[type=text]").css({"border": "solid 1px white"});
+        $("input[type=text]").css({
+            "border": "solid 1px white"
+        });
     })(jQuery);
     var errorText = "<div class='error'>";
     
@@ -28,10 +36,11 @@ function go() {
     
     // Add and validate the start place
     places.push(form.start.value);
-    if (form.start.value == "")
-    {
+    if (form.start.value == "") {
         (function ($) {
-            $("#start").css({"border": "solid 2px red"});
+            $("#start").css({
+                "border": "solid 2px red"
+            });
         })(jQuery);
         errorText += "A start location must be provided.<br />";
     }
@@ -40,29 +49,31 @@ function go() {
     // Store the start date and check that it is after today
     startDate = new Date(form.startdate.value);
     if (form.startdate.value === "" || 
-            startDate.getTime() < (new Date()).getTime())
-    {
+            startDate.getTime() < (new Date()).getTime()) {
         (function ($) {
-            $("#startdate").css({"border": "solid 2px red"});
+            $("#startdate").css({
+                "border": "solid 2px red"
+            });
         })(jQuery);
         errorText += "A start date after today must be provided.<br />";
     }
     
     // For each stop input, validate and store the place and number of days
-    for (var i = 0; i < stopInputs.length; i++)
-    {
+    for (var i = 0; i < stopInputs.length; i++) {
         var stopInputId = "#stop" + stopInputs[i];
         var daysInputId = "#stop" + stopInputs[i] + "days";
         (function ($) {
             places.push($(stopInputId).val());
-            if ($(stopInputId).val() == "")
-            {
-                $(stopInputId).css({"border": "solid 2px red"});
+            if ($(stopInputId).val() == "") {
+                $(stopInputId).css({
+                    "border": "solid 2px red"
+                });
                 errorText += "A stop location must be provided.<br />";
             }
-            if ($(daysInputId).val() < 0)
-            {
-                $(daysInputId).css({"border": "solid 2px red"});
+            if ($(daysInputId).val() < 0) {
+                $(daysInputId).css({
+                    "border": "solid 2px red"
+                });
                 errorText += "The stop length must be at least 0 days.<br />";
             }
             placeDays.push($(daysInputId).val());
@@ -71,18 +82,18 @@ function go() {
     
     // Add and validate the end place
     places.push(form.end.value);
-    if (form.end.value == "")
-    {
+    if (form.end.value == "") {
         (function ($) {
-            $("#end").css({"border": "solid 2px red"});
+            $("#end").css({
+                "border": "solid 2px red"
+            });
         })(jQuery);
         errorText += "An end location must be provided.<br />";
     }
     placeDays.push(null); // Number of days is not applicable
     
     // If an input was invalid, add the error text to page and stop program
-    if (errorText !== "<div class='error'>")
-    {
+    if (errorText !== "<div class='error'>") {
         errorText += "</div>";
         document.getElementById("output").innerHTML = errorText;
         return false;
@@ -90,7 +101,7 @@ function go() {
     
     // Get coordinates for places; after, add map markers for the coordinates
     coordinatesObtained = getCoordinates(places).done(function () {
-      addMapMarkers();  
+        addMapMarkers();  
     });
     
     // Calculate the total number of paths
@@ -106,19 +117,16 @@ function go() {
 function optimize() {
     // Generate 3D array to use as cache for flight searches
     flightsArrays = new Array(places.length - 1);
-    for (var i = 0; i < places.length - 1; i++)
-    {   
+    for (var i = 0; i < places.length - 1; i++) {
         flightsArrays[i] = new Array(places.length);
-        for (var j = 0; j < places.length; j++)
-        {
+        for (var j = 0; j < places.length; j++) {
             flightsArrays[i][j] = [];
         }
     }
     
     // Prepare variables for path calculations:
     var currentUnvisitedStops = [];
-    for (var i = 0; i < places.length - 1; i++)
-    {
+    for (var i = 0; i < places.length - 1; i++) {
         currentUnvisitedStops.push(i);
     }
     var currentPath = [];
@@ -127,7 +135,7 @@ function optimize() {
     // Set initial values for path calculations:
     var currentPlace = 0;
     currentPath.push(currentPlace);
-    currentUnvisitedStops.splice(currentUnvisitedStops.indexOf(currentPlace), 
+    currentUnvisitedStops.splice(currentUnvisitedStops.indexOf(currentPlace),
             1);
     var currentTotalPrice = 0;
    
@@ -135,44 +143,38 @@ function optimize() {
     traverse(currentPath, currentUnvisitedStops, currentTotalPrice, startDate);
     
     // Sort the results:
-    pathsAndPrices.sort(function (a, b){return a.price - b.price});
+    pathsAndPrices.sort(function priceDifference(a, b) {
+        return a.price - b.price
+    });
     
     // Output the results:
-    if (pathsAndPrices[0].price != 99999)
-    {
+    var output;
+    if (pathsAndPrices[0].price != 99999) {
         output = "<h2>Results</h2><dl id='itinerarylist'>";
-        for (var i = 0; i < pathsAndPrices.length; i++)
-        {
+        for (var i = 0; i < pathsAndPrices.length; i++) {
             var path = pathsAndPrices[i].path;
             var price = pathsAndPrices[i].price;
             
             // Generate a string for the path:
             var outputPath = "";
-            for (var j = 0; j < path.length - 1; j++)
-            {
+            for (var j = 0; j < path.length - 1; j++) {
                 outputPath = outputPath + places[path[j]] + "–";
             }
             outputPath = outputPath + places[path[path.length - 1]];
             
             // Generate a string for the price:
-            if (price != 99999)
-            {
+            if (price != 99999) {
                 var outputPrice = "$" + price;
-            }
-            else
-            {
+            } else {
                 var outputPrice = "[No Price Available]";
             }
             
             // Concatenate the strings for this result to the output:
             output = output + "<dt><a href=''>" + outputPath + ": " 
-                    + outputPrice
-                    + "</a></dt><dd id='result" + i + "'></dd>";
+                    + outputPrice + "</a></dt><dd id='result" + i + "'></dd>";
         }
         output = output + "</dl>";
-    }
-    else
-    {
+    } else {
         output = "<h2>Results</h2>No results";
     }
     document.getElementById("output").innerHTML = output;
@@ -200,16 +202,11 @@ function optimize() {
     })(jQuery);
 }
 
-var stopInputs = [];
-var stopId = 0;
-var maxStops = 5;
-
 /**
  * Adds a stop input row to the web page form
  */
 function addInput() {
-    if (stopInputs.length < maxStops)
-    {
+    if (stopInputs.length < maxStops) {
         var newdiv = document.createElement("div");
         newdiv.id = "stopdiv" + stopId;
         newdiv.innerHTML = "<input type='button' value='&#10006;' "
@@ -242,19 +239,15 @@ function removeInput(id) {
  * code of the flight destination
  * @param {Date} date - Flight date
  */
-function flightCacheSearch(originPlaceIndex, destinationPlaceIndex, date)
-{
+function flightCacheSearch(originPlaceIndex, destinationPlaceIndex, date) {
     var dateString = date.toISOString().substring(0, 10);
     // Get the array of flights for that route:
     var array = flightsArrays[originPlaceIndex][destinationPlaceIndex];
     // Return any cached flight for that route with a matching date
-    if (array.length > 0)
-    {
-        for (var i = 0; i < array.length; i++)
-        {
-            if (array[i].date == dateString)
-            {
-                console.log("In Cache:", places[originPlaceIndex], 
+    if (array.length > 0) {
+        for (var i = 0; i < array.length; i++) {
+            if (array[i].date == dateString) {
+                console.log("In Cache:", places[originPlaceIndex],
                         places[destinationPlaceIndex], dateString, array[i]);
                 return array[i];
             }
@@ -264,11 +257,10 @@ function flightCacheSearch(originPlaceIndex, destinationPlaceIndex, date)
     // If the flight was not in the cache, search the flight using the API:
     var result = flightAPISearch(places[originPlaceIndex],
             places[destinationPlaceIndex], dateString);
-    console.log("Searched:", places[originPlaceIndex], 
+    console.log("Searched:", places[originPlaceIndex],
             places[destinationPlaceIndex], dateString, result);
     // Add to the array and return the result (or "No Result")
-    if (result == null)
-    {
+    if (result == null) {
         result = "No Result";
     }
     array.push(result);
@@ -291,12 +283,9 @@ function flightAPISearch(originPlace, destinationPlace, date) {
             + "v1.0/US/USD/en-US/" + originPlace + "/" + destinationPlace + "/"
             + date + "?apiKey=" + config.SKYSCANNER_API_KEY;
     xhr.open("GET", url, false)
-    try
-    {
+    try {
         xhr.send();
-    }
-    catch(e)
-    {
+    } catch (e) {
         alert("An unknown error occurred during the search");
     }
     
@@ -306,42 +295,38 @@ function flightAPISearch(originPlace, destinationPlace, date) {
     var json = JSON.parse(xhr.response);
     
     // If the request was successful, 
-    if (xhr.status == 200)
-    {
+    if (xhr.status == 200) {
         // If the request returned a result, return the flight information:
-        if (json.Quotes.length > 0)
-        {
-            return {price: json.Quotes[0].MinPrice, date: date};
+        if (json.Quotes.length > 0) {
+            return {
+                price: json.Quotes[0].MinPrice,
+                date: date
+            };
         }
         // Otherwise, if the request returned no results,
-        else
-        {
+        else {
             alert("No results available for " + originPlace + "–"
                     + destinationPlace);
             return null;
         }
     }
     // If the request was bad, 
-    else if (xhr.status == 400)
-    {
+    else if (xhr.status == 400) {
         // If there are validation error messages, 
-        if (json.ValidationErrors.length > 0)
-        {
+        if (json.ValidationErrors.length > 0) {
             // If the message is that a value was invalid, 
-            if (json.ValidationErrors[0].Message === "Incorrect value")
-            {
+            if (json.ValidationErrors[0].Message === "Incorrect value") {
                 alert(json.ValidationErrors[0].ParameterValue 
                         + " is not valid");
                 return null;
             }
         }
-        alert("An unknown error occurred during the search");
+        alert("An error occurred during the search");
         return null;
     }
     // If another error occurred,
-    else
-    {
-        alert("An unknown error occurred during the search");
+    else {
+        alert("An error occurred during the search");
         return null;
     }
 }
@@ -360,11 +345,9 @@ function flightAPISearch(originPlace, destinationPlace, date) {
  * @param {Date} previousDate - The date of the previous flight in the path 
  */
 function traverse(previousPath, previousUnvisitedStops, previousTotalPrice, 
-        previousDate)
-{
+        previousDate) {
     // For each unvisited stop ahead, 
-    for (var i = 0; i < previousUnvisitedStops.length; i++)
-    {
+    for (var i = 0; i < previousUnvisitedStops.length; i++) {
         // Create new variables and update them:
         var currentPlace = previousUnvisitedStops[i];
         var currentPath = previousPath.slice();
@@ -377,13 +360,10 @@ function traverse(previousPath, previousUnvisitedStops, previousTotalPrice,
         // If the flight is available and the total so far is available,
         var flight = flightCacheSearch(currentPath[currentPath.length - 2],
                 currentPlace, previousDate)
-        if (flight !== "No Result" && currentTotalPrice != 99999)
-        {
+        if (flight !== "No Result" && currentTotalPrice != 99999) {
             // Add the price for the flight:
-             currentTotalPrice += flight.price;
-        }
-        else
-        {
+            currentTotalPrice += flight.price;
+        } else {
             currentTotalPrice = 99999;
         }
         
@@ -396,26 +376,25 @@ function traverse(previousPath, previousUnvisitedStops, previousTotalPrice,
                 currentDate);
     }
     // If there are no stops left except the end,
-    if (previousUnvisitedStops.length == 0)
-    {
+    if (previousUnvisitedStops.length == 0) {
         // Add the end to the path:
         previousPath.push(places.length - 1);
         
         // If the flight is available and the total so far is available,
         var flight = flightCacheSearch(previousPath[previousPath.length - 2], 
                 places.length - 1, previousDate)
-        if (flight !== "No Result" && previousTotalPrice != 99999)
-        {
+        if (flight !== "No Result" && previousTotalPrice != 99999) {
             // Add the price for the last flight to the end place:
             previousTotalPrice += flight.price;
-        }
-        else
-        {
+        } else {
             previousTotalPrice = 99999;
         }
         
         // Add the final path and price to pathsAndPrices:
-        pathsAndPrices.push({path: previousPath, price: previousTotalPrice});
+        pathsAndPrices.push({
+            path: previousPath,
+            price: previousTotalPrice
+        });
         console.log("Saved:", previousPath, previousTotalPrice);
         updateProgress();
     }
@@ -426,13 +405,11 @@ function traverse(previousPath, previousUnvisitedStops, previousTotalPrice,
  * 
  * @param {number[]} path - Path as an array of place indices
  */
-function itineraryAsHTML(path)
-{
+function itineraryAsHTML(path) {
     var output = "<ul>";
     var date = startDate;
     var totalPrice = 0;
-    for (var i = 0; i < path.length - 1; i++)
-    {
+    for (var i = 0; i < path.length - 1; i++) {
         var days = placeDays[path[i]];
         date = new Date(date.valueOf() + days * 86400000);
         var flight = flightCacheSearch(path[i], path[i + 1], date);
@@ -448,18 +425,12 @@ function itineraryAsHTML(path)
  *
  * @param {number} number - the number of which to calculate the factorial
  */
-function factorial(number)
-{
-    if (number < 0)
-    {
+function factorial(number) {
+    if (number < 0) {
         return -1;
-    }
-    else if (number == 0)
-    {
+    } else if (number == 0) {
         return 1;
-    }
-    else
-    {
+    } else {
         return number * factorial(number - 1);
     }
 }
@@ -468,32 +439,34 @@ function factorial(number)
  * Calculates the progress percentage out of 100 based on the number of paths
  * whose prices have been found and updates the progress bar width
  */
-function updateProgress()
-{
+function updateProgress() {
     var progress = pathsAndPrices.length / numPaths * 100;
     document.getElementById("progressbar").style.width = progress + "%";
     console.log("Progress:", progress);
 }
 
-// Add the Google Maps script to the web page:
-var script = document.createElement("script");
-script.src = "https://maps.googleapis.com/maps/api/js?key="
-        + config.GMAPS_API_KEY;
-script.onload = showMap;
-document.getElementsByTagName('head')[0].appendChild(script);
-
-var map;
-var pathLine;
+/**
+ * Add the Google Maps script to the web page
+ */
+function addMapScript() {
+    var script = document.createElement("script");
+    script.src = "https://maps.googleapis.com/maps/api/js?key="
+            + config.GMAPS_API_KEY;
+    script.onload = showMap;
+    document.getElementsByTagName('head')[0].appendChild(script);
+}
 
 /**
  * Set the map and path line options, causing the map to show
  */
-function showMap()
-{
+function showMap() {
     map = new google.maps.Map(document.getElementById("map"),
     {
         zoom: 2,
-        center: {lat: 0, lng: 0},
+        center: {
+            lat: 0,
+            lng: 0
+        },
         mapTypeControl: false,
         zoomControl: false,
         streetViewControl: false
@@ -506,16 +479,13 @@ function showMap()
     });
 }
 
-var locationInfo;
-
 /**
  * Uses the API to find the coordinates of each place code in the specified
  * array
  *
  * @param {string[]} codes - Array of place codes
  */
-function getCoordinates(codes)
-{
+function getCoordinates(codes) {
     var deferred = $.Deferred();
     locationInfo = [];
     (function ($) {
@@ -529,14 +499,11 @@ function getCoordinates(codes)
                 $.each(codes, function (index, code) {
                     var $cityResults = $(xml).find('City[IataCode="' + code 
                             + '"]');
-                    if ($cityResults.length == 1)
-                    {
+                    if ($cityResults.length == 1) {
                         $cityResults.each(function () {
                             storeCoordinates($(this), code);
                         });
-                    }
-                    else
-                    {
+                    } else {
                         $(xml).find('Airport[Id="' + code + '"]')
                                 .each(function () {
                             storeCoordinates($(this), code);
@@ -557,29 +524,33 @@ function getCoordinates(codes)
  * {JQuery} result - The JQuery object containing the result from the database
  * {string} code - The place code
  */
-function storeCoordinates(result, code)
-{
+function storeCoordinates(result, code) {
     (function ($) {
         var coordinateStrings = result.attr('Location').split(', ');
         var lat = parseFloat(coordinateStrings[1]);
         var lng = parseFloat(coordinateStrings[0]);
-        var coordinates = {lat: lat, lng: lng};
-        locationInfo.push({code: code, coordinates: coordinates});
-        console.log({code: code, coordinates: coordinates});
+        var coordinates = {
+            lat: lat,
+            lng: lng
+        };
+        locationInfo.push({
+            code: code,
+            coordinates: coordinates
+        });
+        console.log({
+            code: code,
+            coordinates: coordinates
+        });
     })(jQuery);
 }
-
-var markers = [];
 
 /**
  * Adds to the map a marker for each place in locationInfo
  */
-function addMapMarkers()
-{
+function addMapMarkers() {
     clearMap();
     var mapBounds = new google.maps.LatLngBounds();
-    for (var i = 0; i < locationInfo.length; i++)
-    {
+    for (var i = 0; i < locationInfo.length; i++) {
         var marker = new google.maps.Marker({
             position: locationInfo[i].coordinates,
             icon: "https://maps.google.com/mapfiles/ms/micons/blue-dot.png",
@@ -595,10 +566,8 @@ function addMapMarkers()
 /**
  * Deletes all markers from the map and hides the path line
  */
-function clearMap()
-{
-    for (var i = 0; i < markers.length; i++)
-    {
+function clearMap() {
+    for (var i = 0; i < markers.length; i++) {
         markers[i].setMap(null);
     }
     markers = [];
@@ -610,13 +579,14 @@ function clearMap()
  *
  * @param {number[]} path - Path as an array of place indices
  */
-function addMapLine(path)
-{
+function addMapLine(path) {
     var pathCoordinates = [];
-    for (var i = 0; i < path.length; i++)
-    {
+    for (var i = 0; i < path.length; i++) {
         pathCoordinates.push(locationInfo[path[i]].coordinates);
     }
     pathLine.setPath(pathCoordinates);
     pathLine.setMap(map);
 }
+
+// When the page loads, add the map script:
+addMapScript();
