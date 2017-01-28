@@ -1,6 +1,7 @@
-var coordinatesObtained; // Promise indicating if getCoordinates is done
+var coordinatesLoaded; // Promise indicating if loadCoordinates is done
 var flightsArrays; // 3D array that is cache of searched flights
 var locationInfo; // Object array containing place codes and their coordinates
+var locationXML; // XML document containing place information
 var map; // Map object displayed on the page
 var markers = []; // Array of map markers
 const maxStops = 5; // Maximum number of stop rows allowed in form
@@ -100,7 +101,8 @@ function go() {
     }
     
     // Get coordinates for places; after, add map markers for the coordinates
-    coordinatesObtained = getCoordinates(places).done(function () {
+    coordinatesLoaded = loadCoordinates().done(function () {
+        searchCoordinates(places);
         addMapMarkers();  
     });
     
@@ -195,7 +197,7 @@ function optimize() {
             var path = pathsAndPrices[itemNumber].path;
             description.html(itineraryAsHTML(path));
             description.show();
-            $.when(coordinatesObtained).done(function () {
+            $.when(coordinatesLoaded).done(function () {
                 addMapLine(path);
             });
         }
@@ -480,49 +482,67 @@ function showMap() {
 }
 
 /**
- * Uses the API to find the coordinates of each place code in the specified
- * array
- *
- * @param {string[]} codes - Array of place codes
+ * Downloads airport and city geographic information from the API and stores
+ * the resulting XML document in locationXML
  */
-function getCoordinates(codes) {
+function loadCoordinates() {
     var deferred = $.Deferred();
-    locationInfo = [];
     (function ($) {
-        $.ajax({
-            method: "GET",
-            url: "http://partners.api.skyscanner.net/apiservices/geo/" +
-                    "v1.0?apikey=" + config.SKYSCANNER_API_KEY,
-            dataType: 'xml',
-            success: function (response) {
-                var xml = response;
-                $.each(codes, function (index, code) {
-                    var $cityResults = $(xml).find('City[IataCode="' + code 
-                            + '"]');
-                    if ($cityResults.length == 1) {
-                        $cityResults.each(function () {
-                            storeCoordinates($(this), code);
-                        });
-                    } else {
-                        $(xml).find('Airport[Id="' + code + '"]')
-                                .each(function () {
-                            storeCoordinates($(this), code);
-                        });
-                    }
+        if(!coordinatesLoaded)
+        {
+            $.ajax({
+                method: "GET",
+                url: "http://partners.api.skyscanner.net/apiservices/geo/" +
+                        "v1.0?apikey=" + config.SKYSCANNER_API_KEY,
+                dataType: 'xml',
+                success: function (response) {
+                    locationXML = response;
+                    deferred.resolve();
+                }
+            });
+        }
+        else
+        {
+            return deferred.resolve();
+        }
+    })(jQuery);
+    return deferred.promise();
+}
+
+/**
+ * Searches for in locationXML and stores in locationInfo the coordinates
+ * of the specified place codes
+ * 
+ * @param {string} codes - Array of place codes 
+ */
+function searchCoordinates(codes)
+{
+    (function ($) {
+        locationInfo = [];
+        $.each(codes, function (index, code) {
+            var $cityResults = $(locationXML)
+                .find('City[IataCode="' + code + '"]');
+            if ($cityResults.length == 1) {
+                $cityResults.each(function () {
+                    storeCoordinates($(this), code);
                 });
-                deferred.resolve();
+            } else {
+                $(locationXML).find('Airport[Id="' + code + '"]')
+                        .each(function () {
+                    storeCoordinates($(this), code);
+                });
             }
         });
     })(jQuery);
-    return deferred.promise();
 }
 
 /**
  * Extracts from the JQuery result and stores in locationInfo the coordinates 
  * of the specified place code
  *
- * {JQuery} result - The JQuery object containing the result from the database
- * {string} code - The place code
+ * @param {JQuery} result - The JQuery object containing the result from the
+ * database
+ * @param {string} code - The place code
  */
 function storeCoordinates(result, code) {
     (function ($) {
