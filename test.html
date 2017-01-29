@@ -1,0 +1,81 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Itinerary Optimizer Tests</title>
+ 
+<link rel="stylesheet" href="https://code.jquery.com/qunit/qunit-2.1.1.css">
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+<script src="https://code.jquery.com/qunit/qunit-2.1.1.js"></script>
+<script src="config.js"></script>
+<script src="optimize.js"></script>
+ 
+<script>
+(function ($) {
+  QUnit.test("Flight API Search", function (assert) {
+    var tomorrow = new Date(new Date().getTime() + 1 * 24 * 60 * 60 * 1000)
+    var twoDaysAhead = new Date(new Date().getTime() + 2 * 24 * 60 * 60 * 1000)
+    places = ["LON", "CDG"];
+    setupCache();
+    assert.equal(flightCacheSearch(0, 1, tomorrow).date,
+        tomorrow.toISOString().substring(0, 10),
+        "LON–CDG tomorrow returns a result");
+    assert.equal(flightCacheSearch(0, 1, twoDaysAhead).date,
+        twoDaysAhead.toISOString().substring(0, 10),
+        "LON–CDG two days from now returns a result");
+  });
+  QUnit.test("Factorial", function (assert) {
+    assert.equal(factorial(0), 1, "factorial(0) = 1");
+    assert.equal(factorial(1), 1, "factorial(1) = 1");
+    assert.equal(factorial(2), 2, "factorial(2) = 2");
+    assert.equal(factorial(3), 6, "factorial(3) = 6");
+    assert.equal(factorial(4), 24, "factorial(4) = 24");
+    assert.equal(factorial(-1), -1, "factorial(-1) = -1");
+  });
+})(jQuery);
+
+function setupCache()
+{
+  flightsArrays = new Array(places.length - 1);
+    for (var i = 0; i < places.length - 1; i++) {
+        flightsArrays[i] = new Array(places.length);
+        for (var j = 0; j < places.length; j++) {
+            flightsArrays[i][j] = [];
+        }
+    }
+}
+</script>
+</head>
+<body>
+ 
+<div id="qunit"></div>
+<div id="qunit-fixture">
+  <form id="form">
+    <h2>Input</h2>
+    <label for="start">Start:</label><br />
+    <input type="text" id="start"><br />
+    
+    <label for="departure-date">Date:</label><br />
+    <input type="date" id="startdate"><br />
+    
+    <label>Stops:<br /></label><br />
+    <div id="stopsinput"></div>
+    <input type="button" value="&#10010; Add Stop" onclick="addInput()"><br />
+    
+    <label for="end">End:<t></label><br />
+    <input type="text" id="end"><br />
+    
+    <input type="button" value="&#10004; Optimize" onclick="go()"><br />
+  </form>
+  <div id="main">
+    <p id="output"></p>
+  </div>
+  <div id="right">
+    <div id="map"></div>
+  </div>
+</div>
+
+</div>
+ 
+</body>
+</html>
