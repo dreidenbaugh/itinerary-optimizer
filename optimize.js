@@ -1,4 +1,5 @@
 var coordinatesLoaded; // Promise indicating if loadCoordinates is done
+var errorText; // String variable for listing errors
 var flightsArrays; // 3D array that is cache of searched flights
 var locationInfo; // Object array containing place codes and their coordinates
 var locationXML; // XML document containing place information
@@ -25,11 +26,11 @@ function go() {
     
     // Reset all text input borders and clear error text:
     (function ($) {
-        $("input[type=text]").css({
+        $("input[type=text], input[type=date]").css({
             "border": "solid 1px white"
         });
     })(jQuery);
-    var errorText = "<div class='error'>";
+    errorText = "<div class='error'>";
     
     // Clear place and placeDays arrays:
     places = [];
@@ -149,10 +150,16 @@ function optimize() {
         return a.price - b.price
     });
     
+    // If a search had an error, add the error text to top of output
+    var output = "<h2>Results</h2>";
+    if (errorText !== "<div class='error'>") {
+        errorText += "</div>";
+        output += errorText;
+    }
+    
     // Output the results:
-    var output;
     if (pathsAndPrices[0].price != 99999) {
-        output = "<h2>Results</h2><dl id='itinerarylist'>";
+        output += "<dl id='itinerarylist'>";
         for (var i = 0; i < pathsAndPrices.length; i++) {
             var path = pathsAndPrices[i].path;
             var price = pathsAndPrices[i].price;
@@ -177,7 +184,7 @@ function optimize() {
         }
         output = output + "</dl>";
     } else {
-        output = "<h2>Results</h2>No results";
+        output += "No results";
     }
     document.getElementById("output").innerHTML = output;
     
@@ -288,7 +295,10 @@ function flightAPISearch(originPlace, destinationPlace, date) {
     try {
         xhr.send();
     } catch (e) {
-        alert("An unknown error occurred during the search");
+        console.log("Request Error:", originPlace, destinationPlace, date);
+        errorText += "Search failed for " + originPlace + "–" 
+                + destinationPlace + " on " + date + ".<br />";
+        return null;
     }
     
     // Parse the response:
@@ -307,8 +317,9 @@ function flightAPISearch(originPlace, destinationPlace, date) {
         }
         // Otherwise, if the request returned no results,
         else {
-            alert("No results available for " + originPlace + "–"
-                    + destinationPlace);
+            console.log("No Results:", originPlace, destinationPlace, date);
+            errorText += "No results available for " + originPlace + "–" 
+                    + destinationPlace + " on " + date + ".<br />";
             return null;
         }
     }
@@ -318,17 +329,22 @@ function flightAPISearch(originPlace, destinationPlace, date) {
         if (json.ValidationErrors.length > 0) {
             // If the message is that a value was invalid, 
             if (json.ValidationErrors[0].Message === "Incorrect value") {
-                alert(json.ValidationErrors[0].ParameterValue 
-                        + " is not valid");
+                var value = json.ValidationErrors[0].ParameterValue;
+                console.log("Incorrect Value:", value);
+                errorText += value + " is not valid.<br />";
                 return null;
             }
         }
-        alert("An error occurred during the search");
+        console.log("Bad Request:", originPlace, destinationPlace, date);
+        errorText += "Search failed for " + originPlace + "–" 
+                + destinationPlace + " on " + date + ".<br />";
         return null;
     }
     // If another error occurred,
     else {
-        alert("An error occurred during the search");
+        console.log("Unknown Error:", originPlace, destinationPlace, date);
+        errorText += "Search failed for " + originPlace + "–" 
+                + destinationPlace + " on " + date + ".<br />";
         return null;
     }
 }
