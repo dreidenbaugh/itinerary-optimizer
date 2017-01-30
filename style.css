@@ -26,9 +26,10 @@ body {
 #main {
   position: absolute;
   left: 200px; top: 80px; bottom: 0;
-  width: calc(40% - 220px);
+  width: 350px;
   overflow-y: auto;
   padding-left: 20px;
+  padding-right: 20px;
   background-color: #EFEFEF;
   color: #000000;
 }
@@ -36,7 +37,7 @@ body {
 #right {
   position: fixed;
   right: 0; top: 80px; bottom: 0;
-  width: 60%;
+  width: calc(100% - 350px - 40px - 200px);
 }
 
 label {

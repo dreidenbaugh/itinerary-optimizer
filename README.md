@@ -9,7 +9,7 @@ algorithm that solves a version of the travelling salesman problem.
 ## Detailed Description
 The web page contains an input form on the left with the start place, date, and 
 end place as mandatory input fields. Place codes must be IATA airport or city 
-codes (e.g. "IAD" for Washington Dulles International Airport or "WAS" for all 
+codes (e.g., "IAD" for Washington Dulles International Airport or "WAS" for all 
 airports in the Washington, D.C. metropolitan area). The **Add Stop** button can 
 be used to extend an unordered list of additional stops, including the number of 
 days to be spent at each stop. 
@@ -26,9 +26,9 @@ three-dimensional array with dimensions for the flight origin, flight
 destination, and date. 
 
 When there are no unvisited stops besides the end place, a path is completed by 
-searching last flight to that destination and storing the total price for all 
-flights on the path in an array, which is sorted by price in ascending order 
-when all paths have been followed. That list of paths and prices is then 
+searching the last flight to that destination and storing the total price for 
+all flights on the path in an array, which is sorted by price in ascending order 
+after all paths have been followed. That list of paths and prices is then 
 displayed in the results column of the page. By default, the cheapest itinerary 
 is shown in detail, with the dates and prices for each flight along the path, 
 but clicking on any other flight path in the list will expand the corresponding 
