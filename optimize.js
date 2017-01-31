@@ -286,67 +286,68 @@ function flightCacheSearch(originPlaceIndex, destinationPlaceIndex, date) {
  * @param {string} date - Flight date in the format "yyyy-MM-dd"
  */
 function flightAPISearch(originPlace, destinationPlace, date) {
-    // Send a request:
-    var xhr = new XMLHttpRequest();
-    var url = "http://partners.api.skyscanner.net/apiservices/browsedates/"
-            + "v1.0/US/USD/en-US/" + originPlace + "/" + destinationPlace + "/"
-            + date + "?apiKey=" + config.SKYSCANNER_API_KEY;
-    xhr.open("GET", url, false)
-    try {
-        xhr.send();
-    } catch (e) {
-        console.log("Request Error:", originPlace, destinationPlace, date);
-        errorText += "Search failed for " + originPlace + "–" 
-                + destinationPlace + " on " + date + ".<br />";
-        return null;
-    }
-    
-    // Parse the response:
-    console.log("Status:", xhr.status);
-    console.log("Response:", xhr.response);
-    var json = JSON.parse(xhr.response);
-    
-    // If the request was successful, 
-    if (xhr.status == 200) {
-        // If the request returned a result, return the flight information:
-        if (json.Quotes.length > 0) {
-            return {
-                price: json.Quotes[0].MinPrice,
-                date: date
-            };
-        }
-        // Otherwise, if the request returned no results,
-        else {
-            console.log("No Results:", originPlace, destinationPlace, date);
-            errorText += "No results available for " + originPlace + "–" 
-                    + destinationPlace + " on " + date + ".<br />";
-            return null;
-        }
-    }
-    // If the request was bad, 
-    else if (xhr.status == 400) {
-        // If there are validation error messages, 
-        if (json.ValidationErrors.length > 0) {
-            // If the message is that a value was invalid, 
-            if (json.ValidationErrors[0].Message === "Incorrect value") {
-                var value = json.ValidationErrors[0].ParameterValue;
-                console.log("Incorrect Value:", value);
-                errorText += value + " is not valid.<br />";
-                return null;
+    (function ($) {
+    $.ajax({
+        method: "GET",
+        async: false,
+        url: "http://partners.api.skyscanner.net/apiservices/browsedates/"
+                + "v1.0/US/USD/en-US/" + originPlace + "/"
+                + destinationPlace + "/" + date + "?apiKey=" 
+                + config.SKYSCANNER_API_KEY,
+        dataType: 'json',
+        success: function (response, textStatus, xhr) {
+            console.log("Status:", xhr.status);
+            console.log("Response:", response);
+                // If the request was successful, 
+                if (xhr.status == 200) {
+                    // If request returned a result, return flight info:
+                    if (response.Quotes.length > 0) {
+                        return {
+                            price: response.Quotes[0].MinPrice,
+                            date: date
+                        };
+                    }
+                    // Otherwise, if request returned no results,
+                    else {
+                        console.log("No Results:", originPlace, 
+                                destinationPlace, date);
+                        errorText += "No results available for " 
+                                + originPlace + "–" + destinationPlace 
+                                + " on " + date + ".<br />";
+                        return null;
+                    }
+                }
+                // If request was bad, 
+                else if (xhr.status == 400) {
+                    // If there are validation error messages, 
+                    if (response.ValidationErrors.length > 0) {
+                        // If the message is that a value was invalid, 
+                        if (response.ValidationErrors[0].Message === 
+                                "Incorrect value") {
+                            var value = response.ValidationErrors[0].
+                                    ParameterValue;
+                            console.log("Incorrect Value:", value);
+                            errorText += value + " is not valid.<br />";
+                            return null;
+                        }
+                    }
+                    console.log("Bad Request:", originPlace, destinationPlace,
+                            date);
+                    errorText += "Search failed for " + originPlace + "–" 
+                            + destinationPlace + " on " + date + ".<br />";
+                    return null;
+                }
+                // If another error occurred,
+                else {
+                    console.log("Unknown Error:", originPlace, 
+                            destinationPlace, date);
+                    errorText += "Search failed for " + originPlace + "–" 
+                            + destinationPlace + " on " + date + ".<br />";
+                    return null;
+                }
             }
-        }
-        console.log("Bad Request:", originPlace, destinationPlace, date);
-        errorText += "Search failed for " + originPlace + "–" 
-                + destinationPlace + " on " + date + ".<br />";
-        return null;
-    }
-    // If another error occurred,
-    else {
-        console.log("Unknown Error:", originPlace, destinationPlace, date);
-        errorText += "Search failed for " + originPlace + "–" 
-                + destinationPlace + " on " + date + ".<br />";
-        return null;
-    }
+        });
+    })(jQuery);
 }
 
 /**
