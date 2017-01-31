@@ -143,72 +143,76 @@ function optimize() {
     var currentTotalPrice = 0;
    
     // Do path calculations:
-    traverse(currentPath, currentUnvisitedStops, currentTotalPrice, startDate);
-    
-    // Sort the results:
-    pathsAndPrices.sort(function priceDifference(a, b) {
-        return a.price - b.price
-    });
-    
-    // If a search had an error, add the error text to top of output
-    var output = "<h2>Results</h2>";
-    if (errorText !== "<div class='error'>") {
-        errorText += "</div>";
-        output += errorText;
-    }
-    
-    // Output the results:
-    if (pathsAndPrices[0].price != 99999) {
-        output += "<dl id='itinerarylist'>";
-        for (var i = 0; i < pathsAndPrices.length; i++) {
-            var path = pathsAndPrices[i].path;
-            var price = pathsAndPrices[i].price;
-            
-            // Generate a string for the path:
-            var outputPath = "";
-            for (var j = 0; j < path.length - 1; j++) {
-                outputPath = outputPath + places[path[j]] + "–";
-            }
-            outputPath = outputPath + places[path[path.length - 1]];
-            
-            // Generate a string for the price:
-            if (price != 99999) {
-                var outputPrice = "$" + price;
-            } else {
-                var outputPrice = "[No Price Available]";
-            }
-            
-            // Concatenate the strings for this result to the output:
-            output = output + "<dt><a href=''>" + outputPath + ": " 
-                    + outputPrice + "</a></dt><dd id='result" + i + "'></dd>";
-        }
-        output = output + "</dl>";
-    } else {
-        output += "No results";
-    }
-    document.getElementById("output").innerHTML = output;
-    
-    (function ($) {
-        var itineraries = $('#itinerarylist > dd').hide();
-        expand($('#result0'), 0);
-        
-        $('#itinerarylist > dt > a').click(function () {
-            var description = $(this).parent().next();
-            var listNumber = description.attr('id').substring(6);
-            expand(description, listNumber);
-            return false;
+    traverse(currentPath, currentUnvisitedStops, currentTotalPrice, startDate)
+            .done(function () {
+        // Sort the results:
+        pathsAndPrices.sort(function priceDifference(a, b) {
+            return a.price - b.price
         });
         
-        function expand(description, itemNumber) {
-            itineraries.hide();
-            var path = pathsAndPrices[itemNumber].path;
-            description.html(itineraryAsHTML(path));
-            description.show();
-            $.when(coordinatesLoaded).done(function () {
-                addMapLine(path);
-            });
+        // If a search had an error, add the error text to top of output
+        var output = "<h2>Results</h2>";
+        if (errorText !== "<div class='error'>") {
+            errorText += "</div>";
+            output += errorText;
         }
-    })(jQuery);
+        
+        // Output the results:
+        if (pathsAndPrices[0].price != 99999) {
+            output += "<dl id='itinerarylist'>";
+            for (var i = 0; i < pathsAndPrices.length; i++) {
+                var path = pathsAndPrices[i].path;
+                var price = pathsAndPrices[i].price;
+                
+                // Generate a string for the path:
+                var outputPath = "";
+                for (var j = 0; j < path.length - 1; j++) {
+                    outputPath = outputPath + places[path[j]] + "–";
+                }
+                outputPath = outputPath + places[path[path.length - 1]];
+                
+                // Generate a string for the price:
+                if (price != 99999) {
+                    var outputPrice = "$" + price;
+                } else {
+                    var outputPrice = "[No Price Available]";
+                }
+                
+                // Concatenate the strings for this result to the output:
+                output = output + "<dt><a href=''>" + outputPath + ": " 
+                        + outputPrice + "</a></dt><dd id='result" + i 
+                        + "'></dd>";
+            }
+            output = output + "</dl>";
+        } else {
+            output += "No results";
+        }
+        document.getElementById("output").innerHTML = output;
+        
+        (function ($) {
+            var itineraries = $('#itinerarylist > dd').hide();
+            expand($('#result0'), 0);
+            
+            $('#itinerarylist > dt > a').click(function () {
+                var description = $(this).parent().next();
+                var listNumber = description.attr('id').substring(6);
+                expand(description, listNumber);
+                return false;
+            });
+            
+            function expand(description, itemNumber) {
+                itineraries.hide();
+                var path = pathsAndPrices[itemNumber].path;
+                itineraryAsHTML(path).done(function (html) {
+                    description.html(html);
+                    description.show();
+                });
+                $.when(coordinatesLoaded).done(function () {
+                    addMapLine(path);
+                });
+            }
+        })(jQuery);
+    });
 }
 
 /**
@@ -249,6 +253,7 @@ function removeInput(id) {
  * @param {Date} date - Flight date
  */
 function flightCacheSearch(originPlaceIndex, destinationPlaceIndex, date) {
+    var deferred = $.Deferred();
     var dateString = date.toISOString().substring(0, 10);
     // Get the array of flights for that route:
     var array = flightsArrays[originPlaceIndex][destinationPlaceIndex];
@@ -258,22 +263,25 @@ function flightCacheSearch(originPlaceIndex, destinationPlaceIndex, date) {
             if (array[i].date == dateString) {
                 console.log("In Cache:", places[originPlaceIndex],
                         places[destinationPlaceIndex], dateString, array[i]);
-                return array[i];
+                deferred.resolve(array[i]);
             }
         }
     }
     
     // If the flight was not in the cache, search the flight using the API:
-    var result = flightAPISearch(places[originPlaceIndex],
-            places[destinationPlaceIndex], dateString);
-    console.log("Searched:", places[originPlaceIndex],
-            places[destinationPlaceIndex], dateString, result);
-    // Add to the array and return the result (or "No Result")
-    if (result == null) {
-        result = "No Result";
-    }
-    array.push(result);
-    return result;
+    flightAPISearch(places[originPlaceIndex], places[destinationPlaceIndex],
+            dateString).done(function (flight) {
+        result = flight;
+        console.log("Searched:", places[originPlaceIndex],
+                places[destinationPlaceIndex], dateString, result);
+        // Add to the array and return the result (or "No Result")
+        if (result == null) {
+            result = "No Result";
+        }
+        array.push(result);
+        deferred.resolve(result);
+    });
+    return deferred.promise();
 }
 
 /**
@@ -286,68 +294,60 @@ function flightCacheSearch(originPlaceIndex, destinationPlaceIndex, date) {
  * @param {string} date - Flight date in the format "yyyy-MM-dd"
  */
 function flightAPISearch(originPlace, destinationPlace, date) {
+    var deferred = $.Deferred();
     (function ($) {
-    $.ajax({
-        method: "GET",
-        async: false,
-        url: "http://partners.api.skyscanner.net/apiservices/browsedates/"
-                + "v1.0/US/USD/en-US/" + originPlace + "/"
-                + destinationPlace + "/" + date + "?apiKey=" 
-                + config.SKYSCANNER_API_KEY,
-        dataType: 'json',
-        success: function (response, textStatus, xhr) {
-            console.log("Status:", xhr.status);
-            console.log("Response:", response);
-                // If the request was successful, 
-                if (xhr.status == 200) {
-                    // If request returned a result, return flight info:
-                    if (response.Quotes.length > 0) {
-                        return {
-                            price: response.Quotes[0].MinPrice,
-                            date: date
-                        };
-                    }
-                    // Otherwise, if request returned no results,
-                    else {
-                        console.log("No Results:", originPlace, 
-                                destinationPlace, date);
-                        errorText += "No results available for " 
-                                + originPlace + "–" + destinationPlace 
-                                + " on " + date + ".<br />";
-                        return null;
-                    }
+        $.ajax({
+            method: "GET",
+            url: "http://partners.api.skyscanner.net/apiservices/browsedates/"
+                    + "v1.0/US/USD/en-US/" + originPlace + "/"
+                    + destinationPlace + "/" + date + "?apiKey=" 
+                    + config.SKYSCANNER_API_KEY,
+            dataType: 'json'
+        })
+            .done(function (response) {
+                // If request returned a result, return flight info:
+                if (response.Quotes.length > 0) {
+                    deferred.resolve({
+                        price: response.Quotes[0].MinPrice,
+                        date: date
+                    });
                 }
-                // If request was bad, 
-                else if (xhr.status == 400) {
-                    // If there are validation error messages, 
-                    if (response.ValidationErrors.length > 0) {
-                        // If the message is that a value was invalid, 
-                        if (response.ValidationErrors[0].Message === 
-                                "Incorrect value") {
-                            var value = response.ValidationErrors[0].
-                                    ParameterValue;
+                // Otherwise, if request returned no results,
+                else {
+                    console.log("No Results:", originPlace, destinationPlace, 
+                            date);
+                    errorText += "No results available for " + originPlace 
+                            + "–" + destinationPlace + " on " + date 
+                            + ".<br />";
+                    deferred.resolve(null);
+                }
+            })
+            .fail(function (jqXHR) {
+                if (jqXHR.status == 400) {
+                    var valErrors = jqXHR.responseJSON.ValidationErrors;
+                    // If there are validation error messages,
+                    if (valErrors.length > 0) {
+                        // If the message is that a value was invalid,
+                        if (valErrors[0].Message === "Incorrect value") {
+                            var value = valErrors[0].ParameterValue;
                             console.log("Incorrect Value:", value);
                             errorText += value + " is not valid.<br />";
-                            return null;
+                            deferred.resolve(null);
                         }
+                    } else {
+                        console.log("Bad Request:", originPlace, 
+                        destinationPlace, date);
                     }
-                    console.log("Bad Request:", originPlace, destinationPlace,
-                            date);
-                    errorText += "Search failed for " + originPlace + "–" 
-                            + destinationPlace + " on " + date + ".<br />";
-                    return null;
-                }
-                // If another error occurred,
-                else {
+                } else {
                     console.log("Unknown Error:", originPlace, 
                             destinationPlace, date);
                     errorText += "Search failed for " + originPlace + "–" 
                             + destinationPlace + " on " + date + ".<br />";
-                    return null;
+                    deferred.resolve(null);
                 }
-            }
-        });
+            });
     })(jQuery);
+    return deferred.promise();
 }
 
 /**
@@ -365,8 +365,11 @@ function flightAPISearch(originPlace, destinationPlace, date) {
  */
 function traverse(previousPath, previousUnvisitedStops, previousTotalPrice, 
         previousDate) {
+    var deferred = $.Deferred();
+    var loopDeferreds = [];
     // For each unvisited stop ahead, 
     for (var i = 0; i < previousUnvisitedStops.length; i++) {
+        var loopDeferred = $.Deferred();
         // Create new variables and update them:
         var currentPlace = previousUnvisitedStops[i];
         var currentPath = previousPath.slice();
@@ -376,47 +379,61 @@ function traverse(previousPath, previousUnvisitedStops, previousTotalPrice,
                 currentPlace), 1); // Remove current place from unvisited stops
         var currentTotalPrice = previousTotalPrice;
         
-        // If the flight is available and the total so far is available,
-        var flight = flightCacheSearch(currentPath[currentPath.length - 2],
-                currentPlace, previousDate)
-        if (flight !== "No Result" && currentTotalPrice != 99999) {
-            // Add the price for the flight:
-            currentTotalPrice += flight.price;
-        } else {
-            currentTotalPrice = 99999;
-        }
-        
-        // Update the date:
-        var days = placeDays[currentPath[currentPath.length - 1]];
-        var currentDate = new Date(previousDate.valueOf() + days * 86400000);
-        
-        // Traverse all possible paths after the current path:
-        traverse(currentPath, currentUnvisitedStops, currentTotalPrice, 
-                currentDate);
-    }
-    // If there are no stops left except the end,
-    if (previousUnvisitedStops.length == 0) {
-        // Add the end to the path:
-        previousPath.push(places.length - 1);
-        
-        // If the flight is available and the total so far is available,
-        var flight = flightCacheSearch(previousPath[previousPath.length - 2], 
-                places.length - 1, previousDate)
-        if (flight !== "No Result" && previousTotalPrice != 99999) {
+        flightCacheSearch(currentPath[currentPath.length - 2], currentPlace,
+                previousDate).done(function (flight) {
+            // If flight is available and the total so far is available,
+            if (flight !== "No Result" && currentTotalPrice != 99999) {
             // Add the price for the last flight to the end place:
-            previousTotalPrice += flight.price;
-        } else {
-            previousTotalPrice = 99999;
-        }
-        
-        // Add the final path and price to pathsAndPrices:
-        pathsAndPrices.push({
-            path: previousPath,
-            price: previousTotalPrice
+                currentTotalPrice += flight.price;
+            } else {
+                currentTotalPrice = 99999;
+            }
+            
+            // Update the date:
+            var days = placeDays[currentPath[currentPath.length - 1]];
+            var currentDate = new Date(previousDate.valueOf() + days 
+                    * 86400000);
+
+            // Traverse all possible paths after the current path:
+            traverse(currentPath, currentUnvisitedStops, currentTotalPrice, 
+                    currentDate).done(function () {
+                loopDeferred.resolve();
+            });
         });
-        console.log("Saved:", previousPath, previousTotalPrice);
-        updateProgress();
+        loopDeferreds.push(loopDeferred);
     }
+    $.when.apply($, loopDeferreds).then(function () {
+        // If there are no stops left except the end,
+        if (previousUnvisitedStops.length == 0) {
+            // Add the end to the path:
+            previousPath.push(places.length - 1);
+
+            flightCacheSearch(previousPath[previousPath.length - 2], 
+                    places.length - 1, previousDate).done(function (flight) {
+                // If flight is available and the total so far is available,
+                if (flight !== "No Result" && previousTotalPrice != 99999) {
+                // Add the price for the last flight to the end place:
+                    previousTotalPrice += flight.price;
+                } else {
+                    previousTotalPrice = 99999;
+                }
+                
+                // Add the final path and price to pathsAndPrices:
+                pathsAndPrices.push({
+                    path: previousPath,
+                    price: previousTotalPrice
+                });
+                console.log("Saved:", previousPath, previousTotalPrice);
+                updateProgress();
+                deferred.resolve();
+            });
+        }
+        else
+        {
+            deferred.resolve();
+        }
+    });
+    return deferred.promise();
 }
 
 /**
@@ -425,18 +442,22 @@ function traverse(previousPath, previousUnvisitedStops, previousTotalPrice,
  * @param {number[]} path - Path as an array of place indices
  */
 function itineraryAsHTML(path) {
+    var deferred = $.Deferred();
     var output = "<ul>";
     var date = startDate;
     var totalPrice = 0;
     for (var i = 0; i < path.length - 1; i++) {
         var days = placeDays[path[i]];
         date = new Date(date.valueOf() + days * 86400000);
-        var flight = flightCacheSearch(path[i], path[i + 1], date);
-        output = output + "<li>" + flight.date + ": " + places[path[i]] + "–" 
-                + places[path[i + 1]] + " ($" + flight.price + ")</li>";
-        totalPrice += flight.price;
+        flightCacheSearch(path[i], path[i + 1], date).done(function (flight) {
+            output = output + "<li>" + flight.date + ": " + places[path[i]] 
+                    + "–" + places[path[i + 1]] + " ($" + flight.price 
+                    + ")</li>";
+            totalPrice += flight.price;
+        });
     }
-    return output + "</ul>";
+    deferred.resolve(output + "</ul>");
+    return deferred.promise();
 }
 
 /**
