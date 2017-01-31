@@ -21,8 +21,8 @@ var stopId = 0; // The ID number of the next stop input
 function go() {
     // Show a progress bar:
     document.getElementById("output").innerHTML = "<div id='progressoutline'>" 
-            + "<div id='progresslabel'>Optimizing...</div>"
-            + "<div id='progressbar'></div></div>";
+            + "<div id='progressbar'><div id='progresslabel'>Optimizing..."
+            + "</div></div></div>";
     
     // Reset all text input borders and clear error text:
     (function ($) {

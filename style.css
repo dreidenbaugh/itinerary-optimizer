@@ -96,19 +96,21 @@ input[type=button]{
   margin: 20px auto;
   width: 200px;
   height: 30px;
-  background-color: silver;
+  background-color: white;
+  outline: black 1px solid;
 }
 
 #progressbar {
   position: absolute;
   width: 0%;
   height: 100%;
-  background-color: gray;
+  background-color: #0375B4;
 }
 
 #progresslabel{
   text-align: center;
   line-height: 30px;
+  width: 200px;
 }
 
 #map {
