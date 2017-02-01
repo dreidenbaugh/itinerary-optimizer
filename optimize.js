@@ -110,7 +110,7 @@ function go() {
     // Calculate the total number of paths
     numPaths = factorial(stopInputs.length);
     
-    // Begin optimize function after short timeout for progress bar to update
+    // Begin optimizing
     optimize();
 }
 
@@ -193,6 +193,7 @@ function optimize() {
             var itineraries = $('#itinerarylist > dd').hide();
             expand($('#result0'), 0);
             
+            // When an itinerary list item is clicked, expand the itinerary
             $('#itinerarylist > dt > a').click(function () {
                 var description = $(this).parent().next();
                 var listNumber = description.attr('id').substring(6);
@@ -200,6 +201,15 @@ function optimize() {
                 return false;
             });
             
+            /**
+             * Expand the itinerary list item with the given description 
+             * object and itemNumber by collapsing all others, calculating and 
+             * showing the path, and adding a line to the map
+             *
+             * @param {JQuery} description - The JQuery object for the list 
+             item description
+             * @param {number} itemNumber - The index of the list item
+             */
             function expand(description, itemNumber) {
                 itineraries.hide();
                 var path = pathsAndPrices[itemNumber].path;
@@ -242,9 +252,10 @@ function removeInput(id) {
 }
 
 /**
- * Searches the cache for the specified flight and returns the flight if it
- * is found; if it is not in the cache, it initiates an API search for the
- * flight and returns the result or "No Result" if the search has no results
+ * Searches the cache for the specified flight and returns a promise with the 
+ * flight if it is found; if it is not in the cache, it initiates an API 
+ * search for the flight and returns a promise with the result or "No Result" 
+ * if the search has no results
  * 
  * @param {number} originPlaceIndex - The index in places[] of the place code 
  * of the flight origin
@@ -286,9 +297,9 @@ function flightCacheSearch(originPlaceIndex, destinationPlaceIndex, date) {
 }
 
 /**
- * Searches using the API and returns the cheapest flight between originPlace
- * and destinationPlace on the specified date, or null if a flight could not 
- * be found
+ * Searches using the API and returns a promise with the cheapest flight 
+ * between originPlace and destinationPlace on the specified date or null if 
+ * a flight could not be found
  * 
  * @param {string} originPlace - Place code of the flight origin
  * @param {string} destinationPlace - Place code of the flight destination
@@ -353,8 +364,8 @@ function flightAPISearch(originPlace, destinationPlace, date) {
 
 /**
  * Based on the current path travelled so far, recursively traverses all 
- * possible paths to the end place and adds each path and its total price to 
- * pathsAndPrices
+ * possible paths to the end place, adds each path and its total price to 
+ * pathsAndPrices, and returns a promise
  * 
  * @param {number[]} previousPath - The path travelled so far as an array of 
  * place indices
@@ -444,7 +455,8 @@ function traverse(previousPath, previousUnvisitedStops, previousTotalPrice,
 }
 
 /**
- * Returns the given path as an HTML list detailing the itinerary
+ * Returns a promise with the given path as an HTML list detailing the 
+ * itinerary
  * 
  * @param {number[]} path - Path as an array of place indices
  */
@@ -527,8 +539,8 @@ function showMap() {
 }
 
 /**
- * Downloads airport and city geographic information from the API and stores
- * the resulting XML document in locationXML
+ * Downloads airport and city geographic information from the API, stores the 
+ * resulting XML document in locationXML, and returns a promise
  */
 function loadCoordinates() {
     var deferred = $.Deferred();
