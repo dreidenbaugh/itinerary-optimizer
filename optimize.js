@@ -111,7 +111,7 @@ function go() {
     numPaths = factorial(stopInputs.length);
     
     // Begin optimize function after short timeout for progress bar to update
-    setTimeout("optimize()", 5);
+    optimize();
 }
 
 /**
@@ -156,7 +156,7 @@ function optimize() {
             errorText += "</div>";
             output += errorText;
         }
-        
+
         // Output the results:
         if (pathsAndPrices[0].price != 99999) {
             output += "<dl id='itinerarylist'>";
@@ -264,6 +264,7 @@ function flightCacheSearch(originPlaceIndex, destinationPlaceIndex, date) {
                 console.log("In Cache:", places[originPlaceIndex],
                         places[destinationPlaceIndex], dateString, array[i]);
                 deferred.resolve(array[i]);
+                return deferred.promise();
             }
         }
     }
@@ -368,40 +369,46 @@ function traverse(previousPath, previousUnvisitedStops, previousTotalPrice,
     var deferred = $.Deferred();
     var loopDeferreds = [];
     // For each unvisited stop ahead, 
-    for (var i = 0; i < previousUnvisitedStops.length; i++) {
-        var loopDeferred = $.Deferred();
-        // Create new variables and update them:
-        var currentPlace = previousUnvisitedStops[i];
-        var currentPath = previousPath.slice();
-        currentPath.push(currentPlace); // Add current place to the path
-        var currentUnvisitedStops = previousUnvisitedStops.slice();
-        currentUnvisitedStops.splice(currentUnvisitedStops.indexOf(
-                currentPlace), 1); // Remove current place from unvisited stops
-        var currentTotalPrice = previousTotalPrice;
-        
-        flightCacheSearch(currentPath[currentPath.length - 2], currentPlace,
-                previousDate).done(function (flight) {
-            // If flight is available and the total so far is available,
-            if (flight !== "No Result" && currentTotalPrice != 99999) {
-            // Add the price for the last flight to the end place:
-                currentTotalPrice += flight.price;
-            } else {
-                currentTotalPrice = 99999;
-            }
+    var subTraverse = function (i) {
+        if (i < previousUnvisitedStops.length) {
+            var loopDeferred = $.Deferred();
+            // Create new variables and update them:
+            var currentPlace = previousUnvisitedStops[i];
+            var currentPath = previousPath.slice();
+            currentPath.push(currentPlace); // Add current place to the path
+            var currentUnvisitedStops = previousUnvisitedStops.slice();
+            currentUnvisitedStops.splice(currentUnvisitedStops.indexOf(
+                    currentPlace), 1); // Remove current place from unvisited
+            var currentTotalPrice = previousTotalPrice;
             
-            // Update the date:
-            var days = placeDays[currentPath[currentPath.length - 1]];
-            var currentDate = new Date(previousDate.valueOf() + days 
-                    * 86400000);
+            flightCacheSearch(currentPath[currentPath.length - 2],
+                    currentPlace, previousDate).done(function (flight) {
+                // If flight is available and the total so far is available,
+                if (flight !== "No Result" && currentTotalPrice != 99999) {
+                // Add the price for the last flight to the end place:
+                    currentTotalPrice += flight.price;
+                } else {
+                    currentTotalPrice = 99999;
+                }
+                
+                // Update the date:
+                var days = placeDays[currentPath[currentPath.length - 1]];
+                var currentDate = new Date(previousDate.valueOf() + days 
+                        * 86400000);
 
-            // Traverse all possible paths after the current path:
-            traverse(currentPath, currentUnvisitedStops, currentTotalPrice, 
-                    currentDate).done(function () {
-                loopDeferred.resolve();
+                // Traverse all possible paths after the current path:
+                traverse(currentPath, currentUnvisitedStops, 
+                        currentTotalPrice, currentDate).done(function () {
+                    loopDeferred.resolve();
+                });
             });
-        });
-        loopDeferreds.push(loopDeferred);
-    }
+            loopDeferreds.push(loopDeferred);
+            return subTraverse(i + 1);
+        } else {
+            return;
+        }
+    };
+    subTraverse(0);
     $.when.apply($, loopDeferreds).then(function () {
         // If there are no stops left except the end,
         if (previousUnvisitedStops.length == 0) {
