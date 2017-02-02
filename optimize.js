@@ -49,7 +49,8 @@ function go() {
     placeDays.push(null); // Number of days is not applicable
     
     // Store the start date and check that it is after today
-    startDate = new Date(form.startdate.value);
+    startDate = new Date(new Date(form.startdate.value).getTime() 
+            + (new Date()).getTimezoneOffset() * 60000);
     if (form.startdate.value === "" || 
             startDate.getTime() < (new Date()).getTime()) {
         (function ($) {
