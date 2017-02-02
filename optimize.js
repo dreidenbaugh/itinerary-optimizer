@@ -311,10 +311,10 @@ function flightAPISearch(originPlace, destinationPlace, date) {
     (function ($) {
         $.ajax({
             method: "GET",
-            url: "http://partners.api.skyscanner.net/apiservices/browsedates/"
-                    + "v1.0/US/USD/en-US/" + originPlace + "/"
-                    + destinationPlace + "/" + date + "?apiKey=" 
-                    + config.SKYSCANNER_API_KEY,
+            url: "https://CORS-Anywhere.HerokuApp.com/http://partners.api"
+                    + ".skyscanner.net/apiservices/browsedates/v1.0/US/USD/"
+                    + "en-US/" + originPlace + "/" + destinationPlace + "/" 
+                    + date + "?apiKey=di943699989992458256776330582792",
             dataType: 'json'
         })
             .done(function (response) {
@@ -511,7 +511,7 @@ function updateProgress() {
 function addMapScript() {
     var script = document.createElement("script");
     script.src = "https://maps.googleapis.com/maps/api/js?key="
-            + config.GMAPS_API_KEY;
+            + "AIzaSyA6D82ORaxWf6WDIohmeLn3ClX5hgykegE";
     script.onload = showMap;
     document.getElementsByTagName('head')[0].appendChild(script);
 }
@@ -550,8 +550,9 @@ function loadCoordinates() {
         {
             $.ajax({
                 method: "GET",
-                url: "http://partners.api.skyscanner.net/apiservices/geo/" +
-                        "v1.0?apikey=" + config.SKYSCANNER_API_KEY,
+                url: "https://CORS-Anywhere.HerokuApp.com/http://partners.api"
+                + ".skyscanner.net/apiservices/geo/v1.0"
+                + "?apikey=di943699989992458256776330582792",
                 dataType: 'xml',
                 success: function (response) {
                     locationXML = response;
