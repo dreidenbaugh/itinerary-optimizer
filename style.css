@@ -1,19 +1,22 @@
 body {
   font-family: "Trebuchet MS", sans-serif;
+  margin: 0px;
 }
 
 #top {
-  position: fixed;
-  top: 0; left: 0; right: 0;
+  position: static;
+  width: 100%;
   height: 80px;
   margin: 0;
   padding-left: 20px;
+  overflow: auto;
+  box-sizing: border-box;
   background-color: #565656;
   color: white;
 }
 
 #form {
-  position: fixed;
+  position: absolute;
   left: 0; top: 80px; bottom: 0;
   width: 200px;
   padding-bottom: 20px;
@@ -26,18 +29,39 @@ body {
 #main {
   position: absolute;
   left: 200px; top: 80px; bottom: 0;
-  width: 350px;
+  width: 400px;
   overflow-y: auto;
   padding-left: 20px;
   padding-right: 20px;
+  box-sizing: border-box;
   background-color: #EFEFEF;
   color: #000000;
 }
 
 #right {
-  position: fixed;
+  position: absolute;
   right: 0; top: 80px; bottom: 0;
-  width: calc(100% - 350px - 40px - 200px);
+  width: calc(100% - 400px - 200px);
+}
+
+@media all and (max-width: 900px) {
+  #top {
+    text-align: center;
+    padding: 0;
+  }
+  
+  #form, #main, #right {
+    position: static;
+    width: 100%;
+  }
+  
+  #right {
+    height: 400px;
+  }
+  
+  h2 {
+    text-align: center;
+  }
 }
 
 label {
