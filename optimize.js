@@ -667,5 +667,29 @@ function addMapLine(path) {
     pathLine.setMap(map);
 }
 
-// When the page loads, add the map script:
+function autoSuggestSource(request, response) {
+    $.ajax({
+        url: "https://cors-anywhere.herokuapp.com/http://partners"
+        + ".api.skyscanner.net/apiservices/autosuggest/v1.0/US/"
+        + "USD/en-US/?query=" + request.term
+        + "&apiKey=di943699989992458256776330582792",
+        type: "GET",
+        dataType: "json",
+        success: function (data) {
+            console.log(data);
+            response(data.Places);
+        }
+    });
+}
+
+function autoSuggest() {
+    $(document).ready(function(){
+        $("#start").autocomplete({
+            source: autoSuggestSource
+        });
+    });
+}
+
+// When the page loads, add the map script and auto-suggester:
 addMapScript();
+autoSuggest();
