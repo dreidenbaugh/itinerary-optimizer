@@ -337,19 +337,26 @@ function flightAPISearch(originPlace, destinationPlace, date) {
             })
             .fail(function (jqXHR) {
                 if (jqXHR.status == 400) {
-                    var valErrors = jqXHR.responseJSON.ValidationErrors;
-                    // If there are validation error messages,
-                    if (valErrors.length > 0) {
-                        // If the message is that a value was invalid,
-                        if (valErrors[0].Message === "Incorrect value") {
-                            var value = valErrors[0].ParameterValue;
-                            console.log("Incorrect Value:", value);
-                            errorText += value + " is not valid.<br />";
-                            deferred.resolve(null);
+                    console.log(jqXHR);
+                    if (jqXHR.responseJSON)
+                    {
+                        var valErrors = jqXHR.responseJSON.ValidationErrors;
+                        // If there are validation error messages,
+                        if (valErrors.length > 0) {
+                            // If the message is that a value was invalid,
+                            if (valErrors[0].Message === "Incorrect value") {
+                                var value = valErrors[0].ParameterValue;
+                                console.log("Incorrect Value:", value);
+                                errorText += value + " is not valid.<br />";
+                                deferred.resolve(null);
+                            }
                         }
                     } else {
                         console.log("Bad Request:", originPlace, 
                         destinationPlace, date);
+                        errorText += "Search failed for " + originPlace + "–" 
+                                + destinationPlace + " on " + date + ".<br />";
+                        deferred.resolve(null);
                     }
                 } else {
                     console.log("Unknown Error:", originPlace, 
