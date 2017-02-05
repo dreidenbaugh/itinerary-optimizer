@@ -320,6 +320,9 @@ function flightAPISearch(originPlace, destinationPlace, date) {
             .done(function (response) {
                 // If request returned a result, return flight info:
                 if (response.Quotes.length > 0) {
+                    response.Quotes.sort(function minPriceDifference(a, b) {
+                        return a.MinPrice - b.MinPrice
+                    });
                     deferred.resolve({
                         price: response.Quotes[0].MinPrice,
                         date: date
