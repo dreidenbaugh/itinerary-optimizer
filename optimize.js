@@ -235,11 +235,12 @@ function addInput() {
         newdiv.id = "stopdiv" + stopId;
         newdiv.innerHTML = "<input type='button' value='&#10006;' "
                 + "onclick='removeInput(" + stopId + ")'> <input type='text'" 
-                + "id='stop" + stopId + "'> Days: <input type='number'"
-                + "id='stop" + stopId + "days'> <br />";
+                + "id='stop" + stopId + "' class='location'> Days: <input " 
+                + "type='number' id='stop" + stopId + "days'> <br />";
         document.getElementById("stopsinput").appendChild(newdiv);
         stopInputs.push(stopId);
         stopId++;
+        autoSuggest();
     }
 }
 
@@ -669,7 +670,7 @@ function addMapLine(path) {
 
 function autoSuggest() {
     $(document).ready(function(){
-        $("#start").autocomplete({
+        $(".location").autocomplete({
             source: function (request, response) {
                 $.ajax({
                     url: "https://cors-anywhere.herokuapp.com/http://partners"
