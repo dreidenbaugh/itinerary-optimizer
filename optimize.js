@@ -667,25 +667,34 @@ function addMapLine(path) {
     pathLine.setMap(map);
 }
 
-function autoSuggestSource(request, response) {
-    $.ajax({
-        url: "https://cors-anywhere.herokuapp.com/http://partners"
-        + ".api.skyscanner.net/apiservices/autosuggest/v1.0/US/"
-        + "USD/en-US/?query=" + request.term
-        + "&apiKey=di943699989992458256776330582792",
-        type: "GET",
-        dataType: "json",
-        success: function (data) {
-            console.log(data);
-            response(data.Places);
-        }
-    });
-}
-
 function autoSuggest() {
     $(document).ready(function(){
         $("#start").autocomplete({
-            source: autoSuggestSource
+            source: function (request, response) {
+                $.ajax({
+                    url: "https://cors-anywhere.herokuapp.com/http://partners"
+                    + ".api.skyscanner.net/apiservices/autosuggest/v1.0/US/"
+                    + "USD/en-US/?query=" + request.term
+                    + "&apiKey=di943699989992458256776330582792",
+                    type: "GET",
+                    dataType: "json",
+                    success: function (data) {
+                        console.log(data);
+                        $.each(data.Places, function (index, value) {
+                            value.label = value.PlaceId.substring(0, value
+                            .PlaceId.indexOf("-")) + " (" + value.PlaceName 
+                            + ")";
+                        });
+                        console.log(data.Places);
+                        response(data.Places);
+                    }
+                });
+            },
+            select: function (event, ui) {
+                $(this).val(ui.item.PlaceId.substring(0, ui.item.PlaceId.
+                        indexOf("-")));
+                return false;
+            }
         });
     });
 }
