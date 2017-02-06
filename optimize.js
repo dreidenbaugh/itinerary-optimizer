@@ -580,14 +580,20 @@ function searchCoordinates(codes)
     (function ($) {
         locationInfo = [];
         $.each(codes, function (index, code) {
-            var $cityResults = $(locationXML)
-                .find('City[IataCode="' + code + '"]');
-            if ($cityResults.length == 1) {
-                $cityResults.each(function () {
+            if ($(locationXML).find('City[IataCode="' + code + '"]')
+                    .length == 1) {
+                $(locationXML).find('City[IataCode="' + code + '"]')
+                        .each(function () {
+                    storeCoordinates($(this), code);
+                });
+            } else if ($(locationXML).find('Airport[Id="' + code + '"]')
+                    .length == 1) {
+                $(locationXML).find('Airport[Id="' + code + '"]')
+                        .each(function () {
                     storeCoordinates($(this), code);
                 });
             } else {
-                $(locationXML).find('Airport[Id="' + code + '"]')
+                $(locationXML).find('City[Id="' + code + '"]')
                         .each(function () {
                     storeCoordinates($(this), code);
                 });
