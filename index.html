@@ -6,6 +6,8 @@
 <title>Itinerary Optimizer</title>
 <link rel="stylesheet" href="style.css">
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+<link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+<script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
 <script src="config.js"></script>
 <script src="optimize.js"></script>
 </head>
@@ -19,7 +21,7 @@
 <form id="form">
   <h2>Input</h2>
   <label for="start">Start:</label><br />
-  <input type="text" id="start"><br />
+  <input type="text" id="start" class="location"><br />
   
   <label for="departure-date">Date:</label><br />
   <input type="date" id="startdate"><br />
@@ -29,7 +31,7 @@
   <input type="button" value="&#10010; Add Stop" onclick="addInput()"><br />
   
   <label for="end">End:<t></label><br />
-  <input type="text" id="end"><br />
+  <input type="text" id="end" class="location"><br />
   
   <input type="button" value="&#10004; Optimize" onclick="go()"><br />
 </form>

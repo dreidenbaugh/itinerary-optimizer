@@ -235,11 +235,12 @@ function addInput() {
         newdiv.id = "stopdiv" + stopId;
         newdiv.innerHTML = "<input type='button' value='&#10006;' "
                 + "onclick='removeInput(" + stopId + ")'> <input type='text'" 
-                + "id='stop" + stopId + "'> Days: <input type='number'"
-                + "id='stop" + stopId + "days'> <br />";
+                + "id='stop" + stopId + "' class='location'> Days: <input " 
+                + "type='number' id='stop" + stopId + "days'> <br />";
         document.getElementById("stopsinput").appendChild(newdiv);
         stopInputs.push(stopId);
         stopId++;
+        autoSuggest();
     }
 }
 
@@ -589,14 +590,20 @@ function searchCoordinates(codes)
     (function ($) {
         locationInfo = [];
         $.each(codes, function (index, code) {
-            var $cityResults = $(locationXML)
-                .find('City[IataCode="' + code + '"]');
-            if ($cityResults.length == 1) {
-                $cityResults.each(function () {
+            if ($(locationXML).find('City[IataCode="' + code + '"]')
+                    .length == 1) {
+                $(locationXML).find('City[IataCode="' + code + '"]')
+                        .each(function () {
+                    storeCoordinates($(this), code);
+                });
+            } else if ($(locationXML).find('Airport[Id="' + code + '"]')
+                    .length == 1) {
+                $(locationXML).find('Airport[Id="' + code + '"]')
+                        .each(function () {
                     storeCoordinates($(this), code);
                 });
             } else {
-                $(locationXML).find('Airport[Id="' + code + '"]')
+                $(locationXML).find('City[Id="' + code + '"]')
                         .each(function () {
                     storeCoordinates($(this), code);
                 });
@@ -677,5 +684,38 @@ function addMapLine(path) {
     pathLine.setMap(map);
 }
 
-// When the page loads, add the map script:
+function autoSuggest() {
+    $(document).ready(function(){
+        $(".location").autocomplete({
+            source: function (request, response) {
+                $.ajax({
+                    url: "https://cors-anywhere.herokuapp.com/http://partners"
+                    + ".api.skyscanner.net/apiservices/autosuggest/v1.0/US/"
+                    + "USD/en-US/?query=" + request.term
+                    + "&apiKey=di943699989992458256776330582792",
+                    type: "GET",
+                    dataType: "json",
+                    success: function (data) {
+                        console.log(data);
+                        $.each(data.Places, function (index, value) {
+                            value.label = value.PlaceId.substring(0, value
+                            .PlaceId.indexOf("-")) + " (" + value.PlaceName 
+                            + ")";
+                        });
+                        console.log(data.Places);
+                        response(data.Places);
+                    }
+                });
+            },
+            select: function (event, ui) {
+                $(this).val(ui.item.PlaceId.substring(0, ui.item.PlaceId.
+                        indexOf("-")));
+                return false;
+            }
+        });
+    });
+}
+
+// When the page loads, add the map script and auto-suggester:
 addMapScript();
+autoSuggest();
