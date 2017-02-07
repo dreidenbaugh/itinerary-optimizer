@@ -230,18 +230,22 @@ function optimize() {
  * Adds a stop input row to the web page form
  */
 function addInput() {
-    if (stopInputs.length < maxStops) {
-        var newdiv = document.createElement("div");
-        newdiv.id = "stopdiv" + stopId;
-        newdiv.innerHTML = "<input type='button' value='&#10006;' "
-                + "onclick='removeInput(" + stopId + ")'> <input type='text'" 
-                + "id='stop" + stopId + "' class='location'> Days: <input " 
-                + "type='number' id='stop" + stopId + "days'> <br />";
-        document.getElementById("stopsinput").appendChild(newdiv);
-        stopInputs.push(stopId);
-        stopId++;
-        autoSuggest();
+    var newdiv = document.createElement("div");
+    newdiv.id = "stopdiv" + stopId;
+    newdiv.innerHTML = "<input type='button' value='&#10006;' "
+            + "onclick='removeInput(" + stopId + ")'> <input type='text'" 
+            + "id='stop" + stopId + "' class='location'> Days: <input " 
+            + "type='number' id='stop" + stopId + "days'> <br />";
+    document.getElementById("stopsinput").appendChild(newdiv);
+    stopInputs.push(stopId);
+    stopId++;
+    if (stopInputs.length == maxStops)
+    {
+        (function ($) {
+            $("#add").hide();
+        })(jQuery);
     }
+    autoSuggest();
 }
 
 /**
@@ -251,6 +255,9 @@ function removeInput(id) {
     var div = document.getElementById("stopdiv" + id);
     stopInputs.splice(stopInputs.indexOf(id), 1);
     div.parentNode.removeChild(div);
+    (function ($) {
+        $("#add").show();
+    })(jQuery);
 }
 
 /**
